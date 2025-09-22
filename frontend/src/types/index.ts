@@ -1,0 +1,93 @@
+export type Ability = 'strength' | 'speed' | 'agility';
+export type Rarity = 'common' | 'uncommon' | 'rare';
+
+export interface Card {
+  id: string;
+  name: string;
+  title?: string; // Special title like "the Destroyer" or "Spinning fists"
+  fullName?: string; // Combined title + name for display
+  description: string;
+  imageUrl?: string;
+  abilities: {
+    strength: number;
+    speed: number;
+    agility: number;
+  };
+  baseAbilities?: { // Original abilities before title modifiers
+    strength: number;
+    speed: number;
+    agility: number;
+  };
+  titleModifiers?: { // Stat modifiers from title
+    strength: number;
+    speed: number;
+    agility: number;
+  };
+  rarity: Rarity;
+  createdAt: string;
+  createdBy: string;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  coins: number;
+  cards: string[];
+  deck: string[];
+  wins: number;
+  losses: number;
+}
+
+export interface Battle {
+  id: string;
+  player1Id: string;
+  player2Id: string;
+  player1Name?: string;
+  player2Name?: string;
+  isSimulation: boolean;
+  player1Deck: string[];
+  player2Deck: string[];
+  player1Cards: string[];
+  player2Cards: string[];
+  player1Order?: number[];
+  player2Order?: number[];
+  rounds: BattleRound[];
+  currentRound: number;
+  player1Points: number;
+  player2Points: number;
+  player1TotalDamage: number;
+  player2TotalDamage: number;
+  winner?: string;
+  winReason?: 'points' | 'damage' | 'coin-toss';
+  status: 'waiting-for-selection' | 'waiting-for-order' | 'ready' | 'in-progress' | 'completed';
+  createdAt: string;
+  completedAt?: string;
+  player1CardDetails?: Card[];
+  player2CardDetails?: Card[];
+}
+
+export interface BattleRound {
+  roundNumber: number;
+  player1CardId: string;
+  player2CardId: string;
+  player1CardName?: string;
+  player2CardName?: string;
+  ability: Ability;
+  player1Roll: number;
+  player2Roll: number;
+  player1StatValue: number;
+  player2StatValue: number;
+  player1Total: number;
+  player2Total: number;
+  damageDealt: number;
+  winner: 'player1' | 'player2' | 'draw';
+}
+
+export interface Pack {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  cardCount: number;
+  guaranteedRarity?: Rarity;
+}

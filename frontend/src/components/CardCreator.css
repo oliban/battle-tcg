@@ -1,0 +1,277 @@
+.card-creator {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.card-creator h2 {
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.error-message {
+  background: #ff4444;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #555;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.ability-selector {
+  display: flex;
+  gap: 10px;
+}
+
+.ability-selector button {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid #ddd;
+  background: white;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.ability-selector button:hover {
+  background: #f0f0f0;
+}
+
+.ability-selector button.selected {
+  background: #4ecdc4;
+  color: white;
+  border-color: #4ecdc4;
+}
+
+.image-preview {
+  margin-top: 10px;
+  max-width: 200px;
+}
+
+.image-preview img {
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+}
+
+.creator-actions {
+  margin-top: 20px;
+}
+
+.generate-button {
+  width: 100%;
+  padding: 15px;
+  background: #4ecdc4;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.generate-button:hover:not(:disabled) {
+  background: #45b8b0;
+}
+
+.generate-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.stats-preview {
+  margin-top: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+}
+
+.stats-preview h3 {
+  margin-bottom: 20px;
+  color: #333;
+  text-align: center;
+}
+
+.preview-card {
+  padding: 20px;
+  background: linear-gradient(135deg, #1e3c72, #2a5298);
+  border: 3px solid;
+  border-radius: 10px;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.preview-name {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.preview-rarity {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+}
+
+.preview-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+}
+
+.preview-stats div {
+  padding: 5px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.preview-cost {
+  margin: 20px 0;
+  text-align: center;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+}
+
+.reroll-info {
+  font-size: 14px;
+  color: #666;
+  margin-top: 5px;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.preview-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.confirm-button {
+  background: #52c41a;
+  color: white;
+}
+
+.confirm-button:hover:not(:disabled) {
+  background: #389e0d;
+}
+
+.confirm-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.cancel-button {
+  background: #888;
+  color: white;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background: #666;
+}
+
+.creator-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: #e8f4f8;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.creator-info p {
+  margin: 5px 0;
+  font-weight: bold;
+  color: #333;
+}
+
+.last-created {
+  margin-top: 30px;
+  padding: 15px;
+  background: white;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.last-created h3 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.card-preview {
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 5px;
+}
+
+.card-preview p {
+  margin: 5px 0;
+}
+
+.reroll-button {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background: #ff6b6b;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.reroll-button:hover:not(:disabled) {
+  background: #ff5252;
+}
+
+.reroll-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.max-rerolls {
+  margin-top: 10px;
+  color: #888;
+  font-style: italic;
+}

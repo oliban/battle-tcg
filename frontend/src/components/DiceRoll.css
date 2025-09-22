@@ -1,0 +1,163 @@
+.dice-container {
+  position: relative;
+  display: inline-block;
+  perspective: 1000px;
+}
+
+.dice-container.small {
+  width: 40px;
+  height: 40px;
+}
+
+.dice-container.medium {
+  width: 60px;
+  height: 60px;
+}
+
+.dice-container.large {
+  width: 80px;
+  height: 80px;
+}
+
+.dice {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dice.rolling {
+  animation: roll 0.5s infinite linear;
+}
+
+@keyframes roll {
+  0% {
+    transform: rotateX(0) rotateY(0);
+  }
+  25% {
+    transform: rotateX(90deg) rotateY(90deg);
+  }
+  50% {
+    transform: rotateX(180deg) rotateY(180deg);
+  }
+  75% {
+    transform: rotateX(270deg) rotateY(270deg);
+  }
+  100% {
+    transform: rotateX(360deg) rotateY(360deg);
+  }
+}
+
+.dice.settled {
+  animation: settle 0.5s ease-out;
+}
+
+@keyframes settle {
+  0% {
+    transform: scale(1.2) rotate(720deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(360deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.dice-face {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 15%;
+  box-sizing: border-box;
+}
+
+.dot {
+  width: 25%;
+  height: 25%;
+  background-color: #000;
+  border-radius: 50%;
+  position: absolute;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.dot.center {
+  grid-column: 2;
+  grid-row: 2;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.dot.top-left {
+  top: 20%;
+  left: 20%;
+}
+
+.dot.top-right {
+  top: 20%;
+  right: 20%;
+}
+
+.dot.middle-left {
+  top: 50%;
+  left: 20%;
+  transform: translateY(-50%);
+}
+
+.dot.middle-right {
+  top: 50%;
+  right: 20%;
+  transform: translateY(-50%);
+}
+
+.dot.bottom-left {
+  bottom: 20%;
+  left: 20%;
+}
+
+.dot.bottom-right {
+  bottom: 20%;
+  right: 20%;
+}
+
+.dice-value {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 24px;
+  font-weight: bold;
+  color: #f1c40f;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  animation: popIn 0.3s ease-out;
+}
+
+@keyframes popIn {
+  0% {
+    transform: translateX(-50%) scale(0);
+  }
+  60% {
+    transform: translateX(-50%) scale(1.2);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+/* Dice container animations */
+.dice-container.small .dice-value {
+  font-size: 16px;
+  bottom: -20px;
+}
+
+.dice-container.large .dice-value {
+  font-size: 32px;
+  bottom: -40px;
+}

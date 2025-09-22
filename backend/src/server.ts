@@ -1,0 +1,32 @@
+import express from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import path from 'path';
+
+import playerRoutes from './routes/players';
+import cardRoutes from './routes/cards';
+import battleRoutes from './routes/battles';
+import shopRoutes from './routes/shop';
+
+const app = express();
+const PORT = process.env.PORT || 8000;
+
+app.use(cors());
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+app.use('/api/players', playerRoutes);
+app.use('/api/cards', cardRoutes);
+app.use('/api/battles', battleRoutes);
+app.use('/api/shop', shopRoutes);
+
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+app.listen(PORT, () => {
+  console.log(`Battle Card Game server running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/api/health`);
+});

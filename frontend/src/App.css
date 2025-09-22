@@ -1,0 +1,213 @@
+.App {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.App-header {
+  background-color: rgba(0, 0, 0, 0.9);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+}
+
+.App-header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.player-info {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  font-size: 16px;
+}
+
+.coins {
+  font-weight: bold;
+  color: #ffd700;
+}
+
+.register-button {
+  padding: 15px 30px;
+  font-size: 18px;
+  background: #4ecdc4;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.register-button:hover {
+  background: #45b8b0;
+}
+
+.navigation {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.navigation button {
+  padding: 10px 20px;
+  background: transparent;
+  color: white;
+  border: 1px solid white;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.navigation button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.navigation button.active {
+  background: white;
+  color: #333;
+}
+
+.main-content {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.error {
+  background: #ff4444;
+  color: white;
+  padding: 10px;
+  margin: 10px 20px;
+  border-radius: 5px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-size: 24px;
+  color: white;
+}
+
+.home {
+  text-align: center;
+  color: white;
+  padding: 40px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.home h2 {
+  margin-bottom: 20px;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 30px;
+}
+
+.quick-actions button {
+  padding: 15px 25px;
+  background: #4ecdc4;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.quick-actions button:hover {
+  background: #45b8b0;
+}
+
+.collection {
+  color: white;
+}
+
+.collection h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.shop {
+  color: white;
+  text-align: center;
+}
+
+.shop h2 {
+  margin-bottom: 30px;
+}
+
+.packs {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.pack {
+  background: rgba(0, 0, 0, 0.5);
+  padding: 30px;
+  border-radius: 10px;
+  width: 250px;
+}
+
+.pack h3 {
+  margin-bottom: 15px;
+  color: #4ecdc4;
+}
+
+.pack .price {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffd700;
+  margin: 15px 0;
+}
+
+.pack button {
+  width: 100%;
+  padding: 12px;
+  background: #4ecdc4;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.pack button:hover:not(:disabled) {
+  background: #45b8b0;
+}
+
+.pack button:disabled {
+  background: #666;
+  cursor: not-allowed;
+}
+
+.battle {
+  text-align: center;
+  color: white;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 40px;
+  border-radius: 10px;
+}
+
+.battle h2 {
+  margin-bottom: 20px;
+}
