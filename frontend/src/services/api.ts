@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Player, Card, Battle, BattleRound, Pack, Ability } from '../types';
+import { Player, Card, Battle, BattleRound, Pack, Ability, Notification, Challenge } from '../types';
 
 // Dynamically determine the API base URL
 // If accessed from localhost, use localhost. Otherwise use the actual host
@@ -149,6 +149,131 @@ export const shopAPI = {
       playerId,
       packId,
     });
+    return response.data;
+  },
+};
+
+export const notificationAPI = {
+  getNotifications: async (playerId: string): Promise<Notification[]> => {
+    const response = await api.get(`/notifications/${playerId}`);
+    return response.data;
+  },
+
+  getUnreadNotifications: async (playerId: string): Promise<{ count: number; notifications: Notification[] }> => {
+    const response = await api.get(`/notifications/${playerId}/unread`);
+    return response.data;
+  },
+
+  markAsRead: async (notificationId: string): Promise<{ success: boolean }> => {
+    const response = await api.post(`/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  markAllAsRead: async (playerId: string): Promise<{ success: boolean }> => {
+    const response = await api.post(`/notifications/${playerId}/read-all`);
+    return response.data;
+  },
+
+  deleteNotification: async (notificationId: string): Promise<{ success: boolean }> => {
+    const response = await api.delete(`/notifications/${notificationId}`);
+    return response.data;
+  },
+};
+
+export const challengeAPI = {
+  getAvailablePlayers: async (): Promise<Array<{
+    id: string;
+    name: string;
+    wins: number;
+    losses: number;
+    rating: number;
+    lastActive?: string;
+  }>> => {
+    const response = await api.get('/challenges/players');
+    return response.data;
+  },
+
+  getPlayerChallenges: async (playerId: string): Promise<Challenge[]> => {
+    const response = await api.get(`/challenges/player/${playerId}`);
+    return response.data;
+  },
+
+  getActiveChallenges: async (playerId: string): Promise<Challenge[]> => {
+    const response = await api.get(`/challenges/active/${playerId}`);
+    return response.data;
+  },
+
+  createChallenge: async (challengerId: string, challengedId: string): Promise<Challenge> => {
+    const response = await api.post('/challenges/create', {
+      challengerId,
+      challengedId,
+    });
+    return response.data;
+  },
+
+  setupChallenge: async (challengeId: string, cards: string[], order: number[]): Promise<Challenge> => {
+    const response = await api.post(`/challenges/${challengeId}/setup`, {
+      cards,
+      order,
+    });
+    return response.data;
+  },
+
+  acceptChallenge: async (challengeId: string, playerId: string): Promise<Challenge> => {
+    const response = await api.post(`/challenges/${challengeId}/accept`, {
+      playerId,
+    });
+    return response.data;
+  },
+
+  setupDefense: async (challengeId: string, cards: string[], order: number[]): Promise<{
+    challenge: Challenge;
+    battle: Battle;
+  }> => {
+    const response = await api.post(`/challenges/${challengeId}/setup-defense`, {
+      cards,
+      order,
+    });
+    return response.data;
+  },
+
+  declineChallenge: async (challengeId: string, playerId: string): Promise<Challenge> => {
+    const response = await api.post(`/challenges/${challengeId}/decline`, {
+      playerId,
+    });
+    return response.data;
+  },
+};
+
+export const leaderboardAPI = {
+  getLeaderboard: async (limit?: number): Promise<Array<{
+    rank: number;
+    id: string;
+    name: string;
+    rating: number;
+    pvpWins: number;
+    pvpLosses: number;
+    totalWins: number;
+    totalLosses: number;
+    winRate: number;
+    lastActive?: string;
+  }>> => {
+    const response = await api.get('/leaderboard', {
+      params: { limit },
+    });
+    return response.data;
+  },
+
+  getPlayerRank: async (playerId: string): Promise<{
+    rank: number;
+    id: string;
+    name: string;
+    rating: number;
+    pvpWins: number;
+    pvpLosses: number;
+    totalPlayers: number;
+  }> => {
+    const response = await api.get(`/leaderboard/player/${playerId}`);
     return response.data;
   },
 };

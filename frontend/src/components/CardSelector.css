@@ -1,0 +1,54 @@
+.card-selector {
+  padding: 20px;
+}
+
+.selection-info {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.selection-info p {
+  font-size: 16px;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.card-wrapper {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card-wrapper:hover {
+  transform: translateY(-4px);
+}
+
+.card-wrapper.selected {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 3px #3b82f6, 0 8px 16px rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+}
+
+.selection-order {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 30px;
+  height: 30px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}

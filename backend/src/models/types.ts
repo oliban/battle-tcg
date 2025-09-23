@@ -34,8 +34,14 @@ export interface Player {
   coins: number;
   cards: string[];
   deck: string[];
-  wins: number;
-  losses: number;
+  wins: number; // Total wins (AI + PvP)
+  losses: number; // Total losses (AI + PvP)
+  pvpWins?: number; // PvP wins only
+  pvpLosses?: number; // PvP losses only
+  aiWins?: number; // AI wins only
+  aiLosses?: number; // AI losses only
+  rating?: number; // ELO-style rating for leaderboard
+  lastActive?: Date;
 }
 
 export interface Battle {
@@ -88,4 +94,40 @@ export interface Pack {
   price: number;
   cardCount: number;
   guaranteedRarity?: Rarity;
+}
+
+export type NotificationType =
+  | 'challenge_received'
+  | 'challenge_accepted'
+  | 'challenge_declined'
+  | 'battle_complete'
+  | 'reward_earned'
+  | 'system_message';
+
+export interface Notification {
+  id: string;
+  recipientId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data?: any; // Type-specific data (challengeId, battleId, etc.)
+  read: boolean;
+  createdAt: Date;
+  expiresAt?: Date;
+}
+
+export interface Challenge {
+  id: string;
+  challengerId: string;
+  challengerName: string;
+  challengedId: string;
+  challengedName: string;
+  status: 'pending' | 'accepted' | 'declined' | 'expired' | 'ready' | 'completed';
+  challengerCards?: string[];
+  challengerOrder?: number[];
+  challengedCards?: string[];
+  challengedOrder?: number[];
+  battleId?: string;
+  createdAt: Date;
+  expiresAt: Date;
 }

@@ -36,6 +36,10 @@ export interface Player {
   deck: string[];
   wins: number;
   losses: number;
+  pvpWins?: number;
+  pvpLosses?: number;
+  rating?: number;
+  lastActive?: string;
 }
 
 export interface Battle {
@@ -90,4 +94,41 @@ export interface Pack {
   price: number;
   cardCount: number;
   guaranteedRarity?: Rarity;
+}
+
+export type NotificationType =
+  | 'challenge_received'
+  | 'challenge_accepted'
+  | 'challenge_declined'
+  | 'battle_complete'
+  | 'system_message'
+  | 'achievement'
+  | 'reward';
+
+export interface Notification {
+  id: string;
+  recipientId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data?: any;
+  read: boolean;
+  createdAt: string;
+  expiresAt?: string;
+}
+
+export interface Challenge {
+  id: string;
+  challengerId: string;
+  challengerName: string;
+  challengedId: string;
+  challengedName: string;
+  status: 'pending' | 'accepted' | 'declined' | 'expired' | 'ready' | 'completed';
+  challengerCards?: string[];
+  challengerOrder?: number[];
+  challengedCards?: string[];
+  challengedOrder?: number[];
+  battleId?: string;
+  createdAt: string;
+  expiresAt: string;
 }

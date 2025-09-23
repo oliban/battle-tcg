@@ -8,9 +8,11 @@ import './Battle.css';
 interface BattleProps {
   player: Player;
   playerCards: Card[];
+  specificBattleId?: string | null;
+  onBattleComplete?: () => void;
 }
 
-const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
+const Battle: React.FC<BattleProps> = ({ player, playerCards, specificBattleId, onBattleComplete }) => {
   const [currentBattle, setCurrentBattle] = useState<BattleType | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<number[]>([]);
   const [battleCards, setBattleCards] = useState<Card[]>([]);
@@ -19,12 +21,48 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
   const [error, setError] = useState<string>('');
   const [battleHistory, setBattleHistory] = useState<BattleType[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'ai' | 'pvp'>('all');
   const [showAnimation, setShowAnimation] = useState(false);
   const [completedBattle, setCompletedBattle] = useState<BattleType | null>(null);
 
   useEffect(() => {
     loadBattleHistory();
   }, [player.id]);
+
+  useEffect(() => {
+    if (specificBattleId) {
+      // Reset any existing battle state before loading specific battle
+      setCurrentBattle(null);
+      setCompletedBattle(null);
+      setShowAnimation(false);
+      loadSpecificBattle(specificBattleId);
+    }
+  }, [specificBattleId]);
+
+  const loadSpecificBattle = async (battleId: string) => {
+    try {
+      const battle = await battleAPI.getBattle(battleId);
+
+      // Load card details for both players
+      if (battle.player1CardDetails) {
+        setBattleCards(battle.player1CardDetails);
+      }
+      if (battle.player2CardDetails) {
+        setOpponentCards(battle.player2CardDetails);
+      }
+
+      // If battle is completed, show animation first
+      if (battle.status === 'completed') {
+        setCompletedBattle(battle);
+        setShowAnimation(true);
+        // Don't set currentBattle yet - let animation complete handler do it
+      } else {
+        setCurrentBattle(battle);
+      }
+    } catch (err) {
+      console.error('Failed to load specific battle:', err);
+    }
+  };
 
   const loadBattleHistory = async () => {
     try {
@@ -138,6 +176,10 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
     if (completedBattle) {
       setCurrentBattle(completedBattle);
       loadBattleHistory(); // Reload history to include this battle
+      // Clear the specific battle ID so it doesn't replay
+      if (specificBattleId && onBattleComplete) {
+        onBattleComplete();
+      }
     }
   };
 
@@ -149,6 +191,9 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
     setOpponentCards([]);
     setError('');
     setShowAnimation(false);
+    if (onBattleComplete) {
+      onBattleComplete();
+    }
   };
 
   const getAbilityIcon = (ability: string) => {
@@ -377,11 +422,38 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
               {showHistory && (
                 <div className="battle-history">
                   <h3>Recent Battles</h3>
+                  <div className="history-filter">
+                    <button
+                      className={historyFilter === 'all' ? 'active' : ''}
+                      onClick={() => setHistoryFilter('all')}
+                    >
+                      All
+                    </button>
+                    <button
+                      className={historyFilter === 'ai' ? 'active' : ''}
+                      onClick={() => setHistoryFilter('ai')}
+                    >
+                      AI Battles
+                    </button>
+                    <button
+                      className={historyFilter === 'pvp' ? 'active' : ''}
+                      onClick={() => setHistoryFilter('pvp')}
+                    >
+                      PvP Battles
+                    </button>
+                  </div>
                   {battleHistory.length === 0 ? (
                     <p>No battles yet</p>
                   ) : (
                     <div className="history-list">
-                      {battleHistory.slice(0, 10).map(battle => (
+                      {battleHistory
+                        .filter(battle => {
+                          if (historyFilter === 'ai') return battle.isSimulation;
+                          if (historyFilter === 'pvp') return !battle.isSimulation;
+                          return true;
+                        })
+                        .slice(0, 10)
+                        .map(battle => (
                         <div
                           key={battle.id}
                           className={`history-item ${battle.winner === player.id ? 'won' : 'lost'}`}
@@ -390,10 +462,16 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
                             {battle.winner === player.id ? 'WIN' : 'LOSS'}
                           </span>
                           <span className="history-opponent">
-                            vs {battle.isSimulation ? 'AI' : battle.player2Name}
+                            vs {battle.isSimulation ? 'AI Opponent' : (battle.player1Id === player.id ? battle.player2Name : battle.player1Name) || 'Unknown'}
                           </span>
                           <span className="history-score">
-                            {battle.player1Points} - {battle.player2Points}
+                            {battle.player1Id === player.id
+                              ? `${battle.player1Points} - ${battle.player2Points}`
+                              : `${battle.player2Points} - ${battle.player1Points}`
+                            }
+                          </span>
+                          <span className="history-type">
+                            {battle.isSimulation ? '🤖' : '⚔️'}
                           </span>
                         </div>
                       ))}

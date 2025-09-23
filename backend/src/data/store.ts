@@ -1,10 +1,12 @@
-import { Player, Card, Battle, Pack } from '../models/types';
+import { Player, Card, Battle, Pack, Notification, Challenge } from '../models/types';
 import { fileStore } from './fileStore';
 
 class GameStore {
   private players: Map<string, Player>;
   private cards: Map<string, Card>;
   private battles: Map<string, Battle>;
+  private notifications: Map<string, Notification>;
+  private challenges: Map<string, Challenge>;
   private packs: Pack[] = [
     {
       id: 'basic-pack',
@@ -28,6 +30,8 @@ class GameStore {
     this.players = fileStore.loadPlayers();
     this.cards = fileStore.loadCards();
     this.battles = fileStore.loadBattles();
+    this.notifications = fileStore.loadNotifications();
+    this.challenges = fileStore.loadChallenges();
   }
 
   private saveData() {
@@ -199,6 +203,151 @@ class GameStore {
     }
 
     return packCards;
+  }
+
+  // Notification methods
+  createNotification(notification: Omit<Notification, 'id' | 'createdAt'>): Notification {
+    const newNotification: Notification = {
+      ...notification,
+      id: `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date(),
+      read: false
+    };
+    this.notifications.set(newNotification.id, newNotification);
+    fileStore.saveNotifications(this.notifications);
+    return newNotification;
+  }
+
+  getNotification(id: string): Notification | undefined {
+    return this.notifications.get(id);
+  }
+
+  getPlayerNotifications(playerId: string): Notification[] {
+    const notifications = Array.from(this.notifications.values())
+      .filter(n => n.recipientId === playerId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    // Clean up expired notifications
+    const now = new Date();
+    return notifications.filter(n => !n.expiresAt || new Date(n.expiresAt) > now);
+  }
+
+  getUnreadNotifications(playerId: string): Notification[] {
+    return this.getPlayerNotifications(playerId).filter(n => !n.read);
+  }
+
+  markNotificationAsRead(notificationId: string): boolean {
+    const notification = this.notifications.get(notificationId);
+    if (notification) {
+      notification.read = true;
+      this.notifications.set(notificationId, notification);
+      fileStore.saveNotifications(this.notifications);
+      return true;
+    }
+    return false;
+  }
+
+  markAllNotificationsAsRead(playerId: string): void {
+    const playerNotifications = this.getPlayerNotifications(playerId);
+    playerNotifications.forEach(n => {
+      n.read = true;
+      this.notifications.set(n.id, n);
+    });
+    fileStore.saveNotifications(this.notifications);
+  }
+
+  deleteNotification(notificationId: string): boolean {
+    const deleted = this.notifications.delete(notificationId);
+    if (deleted) {
+      fileStore.saveNotifications(this.notifications);
+    }
+    return deleted;
+  }
+
+  // Challenge methods
+  createChallenge(challenge: Omit<Challenge, 'id' | 'createdAt' | 'expiresAt'>): Challenge {
+    const newChallenge: Challenge = {
+      ...challenge,
+      id: `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+      status: 'pending'
+    };
+    this.challenges.set(newChallenge.id, newChallenge);
+    fileStore.saveChallenges(this.challenges);
+    return newChallenge;
+  }
+
+  getChallenge(id: string): Challenge | undefined {
+    return this.challenges.get(id);
+  }
+
+  updateChallenge(id: string, updates: Partial<Challenge>): Challenge | undefined {
+    const challenge = this.challenges.get(id);
+    if (!challenge) return undefined;
+
+    const updated = { ...challenge, ...updates };
+    this.challenges.set(id, updated);
+    fileStore.saveChallenges(this.challenges);
+    return updated;
+  }
+
+  getPlayerChallenges(playerId: string): {
+    incoming: Challenge[];
+    outgoing: Challenge[];
+  } {
+    const now = new Date();
+    const challenges = Array.from(this.challenges.values())
+      .filter(c => new Date(c.expiresAt) > now); // Filter expired
+
+    return {
+      incoming: challenges
+        .filter(c => c.challengedId === playerId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+      outgoing: challenges
+        .filter(c => c.challengerId === playerId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    };
+  }
+
+  getActiveChallenges(playerId: string): Challenge[] {
+    const { incoming, outgoing } = this.getPlayerChallenges(playerId);
+    return [...incoming, ...outgoing]
+      .filter(c => c.status === 'pending' || c.status === 'accepted' || c.status === 'ready')
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  // Helper method to send notifications
+  sendNotification(
+    recipientId: string,
+    type: Notification['type'],
+    title: string,
+    message: string,
+    data?: any
+  ): Notification {
+    return this.createNotification({
+      recipientId,
+      type,
+      title,
+      message,
+      data,
+      read: false
+    });
+  }
+
+  // Get leaderboard data
+  getLeaderboard(limit: number = 50): Player[] {
+    return Array.from(this.players.values())
+      .sort((a, b) => {
+        // Sort by rating if available, otherwise by PvP win rate
+        if (a.rating && b.rating) {
+          return b.rating - a.rating;
+        }
+        const aWinRate = (a.pvpWins || 0) / Math.max(1, (a.pvpWins || 0) + (a.pvpLosses || 0));
+        const bWinRate = (b.pvpWins || 0) / Math.max(1, (b.pvpWins || 0) + (b.pvpLosses || 0));
+        return bWinRate - aWinRate;
+      })
+      .slice(0, limit);
   }
 }
 

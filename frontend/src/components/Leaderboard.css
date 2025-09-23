@@ -1,0 +1,288 @@
+.leaderboard-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.leaderboard-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.leaderboard-header h1 {
+  margin: 0;
+  font-size: 36px;
+  color: #1f2937;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin: 8px 0 0 0;
+  font-size: 16px;
+}
+
+.player-rank-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+}
+
+.rank-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.your-rank {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.rank-number {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.rank-details {
+  margin-left: auto;
+  font-size: 14px;
+}
+
+.leaderboard-table {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table-header,
+.table-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 80px 80px 120px 120px;
+  align-items: center;
+  padding: 12px 20px;
+}
+
+.table-header {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 14px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.table-row {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.2s;
+}
+
+.table-row:hover {
+  background: #f9fafb;
+}
+
+.table-row.current-player {
+  background: #eff6ff;
+  border: 2px solid #3b82f6;
+  margin: -1px;
+}
+
+.table-row.top-three {
+  background: linear-gradient(90deg, #fef3c7 0%, transparent 100%);
+}
+
+.col-rank {
+  text-align: center;
+}
+
+.rank-badge {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.col-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.player-name {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.you-badge {
+  background: #3b82f6;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.col-rating {
+  text-align: center;
+}
+
+.rating {
+  font-weight: bold;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.rating-master {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #7c2d12;
+}
+
+.rating-expert {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  color: white;
+}
+
+.rating-advanced {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+}
+
+.rating-intermediate {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: white;
+}
+
+.rating-beginner {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.col-wins {
+  text-align: center;
+}
+
+.wins {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.col-losses {
+  text-align: center;
+}
+
+.losses {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.col-winrate {
+  display: flex;
+  align-items: center;
+}
+
+.winrate-bar {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  background: #f3f4f6;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.winrate-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #34d399, #10b981);
+  transition: width 0.3s;
+}
+
+.winrate-text {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.col-active {
+  text-align: center;
+}
+
+.last-active {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.loading,
+.error-message {
+  text-align: center;
+  padding: 40px;
+}
+
+.error-message {
+  color: #ef4444;
+}
+
+.leaderboard-footer {
+  margin-top: 40px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 12px;
+}
+
+.rating-legend h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #374151;
+  font-size: 16px;
+}
+
+.tier-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.tier {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tier-badge {
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .table-header,
+  .table-row {
+    grid-template-columns: 60px 1fr 80px 120px;
+  }
+
+  .col-wins,
+  .col-losses,
+  .col-active {
+    display: none;
+  }
+
+  .player-rank-card {
+    padding: 15px;
+  }
+
+  .rank-info {
+    flex-wrap: wrap;
+  }
+
+  .rank-details {
+    margin-left: 0;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .tier-list {
+    grid-template-columns: 1fr;
+  }
+}

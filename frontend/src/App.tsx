@@ -8,11 +8,14 @@ import PackOpening from './components/PackOpening';
 import DeckBuilder from './components/DeckBuilder';
 import Battle from './components/Battle';
 import voiceService from './services/voice';
+import NotificationBell from './components/NotificationBell';
+import Challenge from './components/Challenge';
+import Leaderboard from './components/Leaderboard';
 
 function App() {
   const [player, setPlayer] = useState<Player | null>(null);
   const [playerCards, setPlayerCards] = useState<Card[]>([]);
-  const [currentView, setCurrentView] = useState<'home' | 'creator' | 'collection' | 'shop' | 'battle' | 'pack-opening' | 'deck-builder'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'creator' | 'collection' | 'shop' | 'battle' | 'pack-opening' | 'deck-builder' | 'challenge' | 'leaderboard'>('home');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [packCards, setPackCards] = useState<Card[]>([]);
@@ -20,6 +23,7 @@ function App() {
   const [selectedVoice, setSelectedVoice] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [collectionSortBy, setCollectionSortBy] = useState<'total' | 'strength' | 'speed' | 'agility' | 'rarity'>('total');
+  const [specificBattleId, setSpecificBattleId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedPlayerId = localStorage.getItem('playerId');
@@ -248,6 +252,18 @@ function App() {
           >
             Logout
           </button>
+          {player && (
+            <NotificationBell
+              playerId={player.id}
+              onChallengeClick={(challengeId) => {
+                setCurrentView('challenge');
+              }}
+              onBattleClick={(battleId) => {
+                setSpecificBattleId(battleId);
+                setCurrentView('battle');
+              }}
+            />
+          )}
         </div>
       </header>
 
@@ -269,6 +285,12 @@ function App() {
         </button>
         <button onClick={() => setCurrentView('battle')} className={currentView === 'battle' ? 'active' : ''}>
           Battle
+        </button>
+        <button onClick={() => setCurrentView('challenge')} className={currentView === 'challenge' ? 'active' : ''}>
+          Challenge
+        </button>
+        <button onClick={() => setCurrentView('leaderboard')} className={currentView === 'leaderboard' ? 'active' : ''}>
+          Leaderboard
         </button>
       </nav>
 
@@ -411,7 +433,12 @@ function App() {
         )}
 
         {currentView === 'battle' && (
-          <Battle player={player} playerCards={playerCards} />
+          <Battle
+            player={player}
+            playerCards={playerCards}
+            specificBattleId={specificBattleId}
+            onBattleComplete={() => setSpecificBattleId(null)}
+          />
         )}
 
         {currentView === 'pack-opening' && packCards.length > 0 && (
@@ -419,6 +446,24 @@ function App() {
             cards={packCards}
             onComplete={handlePackOpeningComplete}
           />
+        )}
+
+        {currentView === 'challenge' && (
+          <Challenge
+            player={player}
+            onBattleStart={(battleId) => {
+              setSpecificBattleId(battleId);
+              setCurrentView('battle');
+            }}
+            onUpdate={() => {
+              // Refresh player data if needed
+              loadPlayer(player.id);
+            }}
+          />
+        )}
+
+        {currentView === 'leaderboard' && (
+          <Leaderboard currentPlayerId={player.id} />
         )}
       </main>
     </div>
