@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { gameStore } from '../data/store';
+import { Player } from '../models/types';
 
 const router = Router();
 
@@ -8,7 +9,7 @@ router.get('/', (req: Request, res: Response) => {
   const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
   const players = gameStore.getLeaderboard(limit);
 
-  const leaderboard = players.map((player, index) => ({
+  const leaderboard = players.map((player: Player, index: number) => ({
     rank: index + 1,
     id: player.id,
     name: player.name,
@@ -31,7 +32,7 @@ router.get('/player/:playerId', (req: Request, res: Response) => {
   const { playerId } = req.params;
   const leaderboard = gameStore.getLeaderboard(1000); // Get more players to find rank
 
-  const playerIndex = leaderboard.findIndex(p => p.id === playerId);
+  const playerIndex = leaderboard.findIndex((p: Player) => p.id === playerId);
 
   if (playerIndex === -1) {
     return res.status(404).json({ error: 'Player not found in leaderboard' });

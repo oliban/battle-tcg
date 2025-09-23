@@ -357,20 +357,13 @@ function App() {
             ) : (
               <div className="cards-grid">
                 {(() => {
-                  // Group cards by ID to handle duplicates
-                  const cardGroups = playerCards.reduce((acc, card) => {
-                    const baseId = card.id.split('_')[0];
-                    if (!acc[baseId]) {
-                      acc[baseId] = { card, count: 0 };
-                    }
-                    acc[baseId].count++;
-                    return acc;
-                  }, {} as Record<string, { card: Card; count: number }>);
+                  // Don't group cards - show each variant separately
+                  const individualCards = playerCards;
 
-                  // Sort the grouped cards
-                  const sortedCards = Object.values(cardGroups).sort((a, b) => {
-                    const cardA = a.card;
-                    const cardB = b.card;
+                  // Sort the cards
+                  const sortedCards = individualCards.sort((a, b) => {
+                    const cardA = a;
+                    const cardB = b;
 
                     if (collectionSortBy === 'strength') return cardB.abilities.strength - cardA.abilities.strength;
                     if (collectionSortBy === 'speed') return cardB.abilities.speed - cardA.abilities.speed;
@@ -385,8 +378,8 @@ function App() {
                     return totalB - totalA;
                   });
 
-                  return sortedCards.map(({ card, count }) => (
-                    <CardComponent key={card.id} card={card} count={count} />
+                  return sortedCards.map((card) => (
+                    <CardComponent key={card.id} card={card} />
                   ));
                 })()}
               </div>

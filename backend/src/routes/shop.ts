@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { gameStore } from '../data/store';
 import { applyTitleToCard } from '../utils/gameUtils';
+import { Card } from '../models/types';
 
 const router = Router();
 
@@ -33,7 +34,7 @@ router.post('/buy-pack', (req: Request, res: Response) => {
   }
 
   // Apply titles to all cards from the pack
-  const titledCards = packCards.map(card => {
+  const titledCards = packCards.map((card: Card) => {
     // Create a new card instance with title
     const titledCard = applyTitleToCard({ ...card });
     // Give it a new unique ID since this is a new instance
@@ -43,7 +44,7 @@ router.post('/buy-pack', (req: Request, res: Response) => {
     return titledCard;
   });
 
-  const newCardIds = titledCards.map(card => card.id);
+  const newCardIds = titledCards.map((card: Card) => card.id);
 
   gameStore.updatePlayer(playerId, {
     coins: player.coins - pack.price,

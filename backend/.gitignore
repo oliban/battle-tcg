@@ -2,3 +2,5 @@ node_modules
 dist
 data/*.json
 .env
+game.db
+card_images/
