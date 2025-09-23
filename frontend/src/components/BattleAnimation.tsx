@@ -11,10 +11,12 @@ interface BattleAnimationProps {
 }
 
 interface RoundState {
-  phase: 'intro' | 'cards' | 'ability' | 'rolling' | 'result' | 'complete';
+  phase: 'battle-intro' | 'intro' | 'cards' | 'cards-flex' | 'ability' | 'rolling' | 'result' | 'damage-victory' | 'complete' | 'final-results';
   player1DiceRolling: boolean;
   player2DiceRolling: boolean;
   showResult: boolean;
+  player1StrongestStat?: 'strength' | 'speed' | 'agility';
+  player2StrongestStat?: 'strength' | 'speed' | 'agility';
 }
 
 const BattleAnimation: React.FC<BattleAnimationProps> = ({
@@ -22,16 +24,19 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
   playerCards,
   onComplete
 }) => {
-  const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
+  const [currentRoundIndex, setCurrentRoundIndex] = useState(-1); // Start at -1 for battle intro
   const [roundState, setRoundState] = useState<RoundState>({
-    phase: 'intro',
+    phase: 'battle-intro',
     player1DiceRolling: false,
     player2DiceRolling: false,
     showResult: false
   });
   const [player1Score, setPlayer1Score] = useState(0);
   const [player2Score, setPlayer2Score] = useState(0);
+  const [player1Damage, setPlayer1Damage] = useState(0);
+  const [player2Damage, setPlayer2Damage] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [battleStarted, setBattleStarted] = useState(false);
 
   const currentRound = battle.rounds[currentRoundIndex];
   const isLastRound = currentRoundIndex === battle.rounds.length - 1;
@@ -50,14 +55,37 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
   );
 
   useEffect(() => {
-    if (currentRound && !isAnimating) {
+    // Start battle intro on mount
+    const initBattle = async () => {
+      console.log('Starting battle intro');
+
+      // Announce the battle
+      voiceService.speak(
+        `${battle.player1Name} versus ${battle.player2Name || 'AI Opponent'}`,
+        { rate: 0.8, pitch: 1.1, volume: 1.0 }
+      );
+
+      await delay(3000);
+
+      // Start the first round
+      setBattleStarted(true);
+      setCurrentRoundIndex(0);
+    };
+
+    if (!battleStarted) {
+      initBattle();
+    }
+  }, []); // Run only once on mount
+
+  useEffect(() => {
+    if (battleStarted && currentRound && !isAnimating) {
       // Use a timeout to ensure state updates have propagated
       const timeoutId = setTimeout(() => {
         runRoundAnimation();
       }, 100);
       return () => clearTimeout(timeoutId);
     }
-  }, [currentRoundIndex, isAnimating]);
+  }, [currentRoundIndex, isAnimating, battleStarted]);
 
   const runRoundAnimation = async () => {
     // Re-calculate these values inside the function to get fresh values
@@ -87,15 +115,20 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
       showResult: false
     });
 
-    // Intro phase - show round number
+    // Intro phase - show round number and announce it
     console.log(`Round ${currentRoundIndex + 1}: Showing intro`);
+    voiceService.speak(`Round ${currentRoundIndex + 1}`, {
+      rate: 0.9,
+      pitch: 1.2,
+      volume: 1.0
+    });
     await delay(1500);
 
-    // Show cards and announce the matchup
+    // Show cards first
     console.log(`Round ${currentRoundIndex + 1}: Showing cards`);
     setRoundState(prev => ({ ...prev, phase: 'cards' }));
 
-    // Get fresh card details for voice announcement
+    // Get fresh card details
     const p1Card = battle.player1CardDetails?.find(c =>
       c.id === round.player1CardId || getBaseId(c.id) === getBaseId(round.player1CardId || '')
     );
@@ -103,20 +136,58 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
       c.id === round.player2CardId || getBaseId(c.id) === getBaseId(round.player2CardId || '')
     );
 
+    // Determine strongest stats for each card
+    let p1Strongest: 'strength' | 'speed' | 'agility' = 'strength';
+    let p2Strongest: 'strength' | 'speed' | 'agility' = 'strength';
+
+    if (p1Card) {
+      const p1Max = Math.max(p1Card.abilities.strength, p1Card.abilities.speed, p1Card.abilities.agility);
+      if (p1Card.abilities.speed === p1Max) p1Strongest = 'speed';
+      else if (p1Card.abilities.agility === p1Max) p1Strongest = 'agility';
+    }
+
+    if (p2Card) {
+      const p2Max = Math.max(p2Card.abilities.strength, p2Card.abilities.speed, p2Card.abilities.agility);
+      if (p2Card.abilities.speed === p2Max) p2Strongest = 'speed';
+      else if (p2Card.abilities.agility === p2Max) p2Strongest = 'agility';
+    }
+
+    // Announce card names
     if (p1Card && p2Card) {
-      voiceService.speakRoundIntro(
-        currentRoundIndex + 1,
-        p1Card.fullName || p1Card.name,
-        p2Card.fullName || p2Card.name,
-        round.ability
+      voiceService.speak(
+        `${p1Card.fullName || p1Card.name} contro ${p2Card.fullName || p2Card.name}`,
+        { rate: 0.9, pitch: 1.0, volume: 1.0 }
       );
     }
 
-    await delay(3500); // Extra time for voice announcement
+    await delay(2500);
+
+    // Show cards flexing their strongest skill
+    console.log(`Round ${currentRoundIndex + 1}: Cards flexing`);
+    setRoundState(prev => ({
+      ...prev,
+      phase: 'cards-flex',
+      player1StrongestStat: p1Strongest,
+      player2StrongestStat: p2Strongest
+    }));
+    await delay(3000); // Extended flex time
 
     // Show ability being tested
     console.log(`Round ${currentRoundIndex + 1}: Showing ability - ${round.ability}`);
     setRoundState(prev => ({ ...prev, phase: 'ability' }));
+
+    // Announce the actual ability being tested
+    if (p1Card && p2Card) {
+      const abilityText = round.ability === 'strength' ? 'forza' :
+                         round.ability === 'speed' ? 'velocità' :
+                         round.ability === 'agility' ? 'agilità' : round.ability;
+      voiceService.speak(`Prova di ${abilityText}`, {
+        rate: 0.75,
+        pitch: 1.1,
+        volume: 1.0
+      });
+    }
+
     await delay(2000);
 
     // Roll dice - longer for excitement!
@@ -142,9 +213,13 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
     console.log(`Round ${currentRoundIndex + 1}: Showing result - winner: ${round.winner}`);
     setRoundState(prev => ({ ...prev, phase: 'result', showResult: true }));
 
-    // Update scores and announce the result
+    // Update scores and damage, announce the result
     if (round.winner === 'player1') {
       setPlayer1Score(prev => prev + 1);
+      // Update damage if any was dealt
+      if (round.damageDealt > 0) {
+        setPlayer1Damage(prev => prev + round.damageDealt);
+      }
       if (p1Card) {
         voiceService.speakRoundResult(
           round.player1Total,
@@ -154,6 +229,10 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
       }
     } else if (round.winner === 'player2') {
       setPlayer2Score(prev => prev + 1);
+      // Update damage if any was dealt
+      if (round.damageDealt > 0) {
+        setPlayer2Damage(prev => prev + round.damageDealt);
+      }
       if (p2Card) {
         voiceService.speakRoundResult(
           round.player1Total,
@@ -176,8 +255,44 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
       setCurrentRoundIndex(prev => prev + 1);
     } else {
       console.log(`Round ${currentRoundIndex + 1} complete, battle finished`);
-      setRoundState(prev => ({ ...prev, phase: 'complete' }));
-      await delay(3000);
+
+      // Check if damage determined the winner (not a clear points victory)
+      // Only show damage victory if battle was won by damage (winReason === 'damage')
+      const isDamageVictory = battle.winReason === 'damage';
+
+      if (isDamageVictory) {
+        // Show damage victory screen first
+        setRoundState(prev => ({ ...prev, phase: 'damage-victory' }));
+
+        // Announce damage victory
+        const winnerName = battle.winner === battle.player1Id ?
+          (battle.player1Name || 'Player 1') :
+          (battle.player2Name || 'AI Opponent');
+        voiceService.speak(`Danno! ${winnerName} vince con danno!`, {
+          rate: 0.8,
+          pitch: 1.3,
+          volume: 1.0
+        });
+
+        await delay(4000);
+      }
+
+      // Show final results screen
+      setRoundState(prev => ({ ...prev, phase: 'final-results' }));
+
+      // Calculate actual final score from battle rounds
+      const actualPlayer1Score = battle.rounds.filter(r => r.winner === 'player1').length;
+      const actualPlayer2Score = battle.rounds.filter(r => r.winner === 'player2').length;
+
+      // Announce the winner with correct score
+      const winner = battle.winner === battle.player1Id ? battle.player1Name : (battle.player2Name || 'AI Opponent');
+      const finalScore = `${actualPlayer1Score} a ${actualPlayer2Score}`;
+      voiceService.speak(
+        `${winner} vince ${finalScore}`,
+        { rate: 0.8, pitch: 1.2, volume: 1.0 }
+      );
+
+      await delay(5000);
       onComplete();
     }
   };
@@ -202,7 +317,8 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
     }
   };
 
-  if (!currentRound || !player1Card || !player2Card) {
+  // During battle intro, we don't need cards yet
+  if (currentRoundIndex >= 0 && (!currentRound || !player1Card || !player2Card)) {
     return <div>Loading battle...</div>;
   }
 
@@ -213,29 +329,113 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
         <div className="player-score">
           <span className="player-name">{battle.player1Name}</span>
           <span className="score">{player1Score}</span>
+          {player1Damage > 0 && (
+            <div style={{
+              fontSize: '12px',
+              color: '#ff6b6b',
+              fontWeight: 'bold',
+              marginTop: '5px',
+              animation: player1Damage > 0 ? 'pulse 0.5s' : 'none'
+            }}>
+              💥 {player1Damage} damage
+            </div>
+          )}
         </div>
         <div className="round-indicator">
-          Round {currentRoundIndex + 1} / 3
+          {currentRoundIndex >= 0 ? `Round ${currentRoundIndex + 1} / 3` : 'Battle Starting'}
         </div>
         <div className="player-score">
           <span className="player-name">{battle.player2Name || 'AI Opponent'}</span>
           <span className="score">{player2Score}</span>
+          {player2Damage > 0 && (
+            <div style={{
+              fontSize: '12px',
+              color: '#ff6b6b',
+              fontWeight: 'bold',
+              marginTop: '5px',
+              animation: player2Damage > 0 ? 'pulse 0.5s' : 'none'
+            }}>
+              💥 {player2Damage} damage
+            </div>
+          )}
         </div>
       </div>
 
       {/* Round Animation */}
       <div className="battle-arena">
+        {roundState.phase === 'battle-intro' && (
+          <div className="battle-intro animated-fade-in" style={{
+            textAlign: 'center',
+            color: 'white',
+            padding: '60px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%'
+          }}>
+            <h1 style={{ fontSize: '64px', marginBottom: '20px' }}>
+              {battle.player1Name}
+            </h1>
+            <h2 style={{ fontSize: '48px', margin: '20px 0', color: '#f1c40f' }}>VS</h2>
+            <h1 style={{ fontSize: '64px', marginTop: '20px' }}>
+              {battle.player2Name || 'AI Opponent'}
+            </h1>
+          </div>
+        )}
+
         {roundState.phase === 'intro' && (
           <div className="round-intro animated-fade-in">
             <h1>ROUND {currentRoundIndex + 1}</h1>
           </div>
         )}
 
-        {(roundState.phase === 'cards' || roundState.phase === 'ability' ||
-          roundState.phase === 'rolling' || roundState.phase === 'result') && (
+        {roundState.phase === 'final-results' && (
+          <div className="final-results animated-fade-in" style={{
+            textAlign: 'center',
+            color: 'white',
+            padding: '60px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%'
+          }}>
+            <h1 style={{
+              fontSize: '72px',
+              marginBottom: '30px',
+              color: battle.winner === battle.player1Id ? '#2ecc71' : '#e74c3c',
+              textShadow: '4px 4px 8px rgba(0,0,0,0.5)'
+            }}>
+              {battle.winner === battle.player1Id ? battle.player1Name : (battle.player2Name || 'AI Opponent')} WINS!
+            </h1>
+            <h2 style={{
+              fontSize: '56px',
+              color: '#f1c40f',
+              textShadow: '3px 3px 6px rgba(0,0,0,0.5)'
+            }}>
+              {battle.rounds.filter(r => r.winner === 'player1').length} - {battle.rounds.filter(r => r.winner === 'player2').length}
+            </h2>
+            {(player1Damage > 0 || player2Damage > 0) && (
+              <div style={{ fontSize: '28px', marginTop: '30px', display: 'flex', gap: '40px', justifyContent: 'center' }}>
+                <div style={{ color: battle.winner === battle.player1Id ? '#2ecc71' : '#e74c3c' }}>
+                  <strong>{battle.player1Name}</strong>
+                  <div style={{ color: '#ff6b6b' }}>💥 {player1Damage} damage</div>
+                </div>
+                <div style={{ color: battle.winner === battle.player1Id ? '#e74c3c' : '#2ecc71' }}>
+                  <strong>{battle.player2Name || 'AI Opponent'}</strong>
+                  <div style={{ color: '#ff6b6b' }}>💥 {player2Damage} damage</div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {(roundState.phase === 'cards' || roundState.phase === 'cards-flex' ||
+          roundState.phase === 'ability' || roundState.phase === 'rolling' ||
+          roundState.phase === 'result') && player1Card && player2Card && (
           <div className="battle-field">
             <div className={`player-side ${roundState.phase === 'cards' ? 'slide-in-left' : ''}`}>
-              <h3>{battle.player1Name}</h3>
               <div className="battle-card-container">
                 {player1Card.imageUrl && (
                   <div className="card-battle-image">
@@ -244,20 +444,41 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
                 )}
                 <div className="card-name-display">{player1Card.fullName || player1Card.name}</div>
                 <div className="card-stats-display">
-                  <div className={`stat-item ${currentRound.ability === 'strength' ? 'active-stat' : ''}`}>
+                  <div className={`stat-item ${(roundState.phase === 'ability' || roundState.phase === 'rolling' || roundState.phase === 'result') && currentRound.ability === 'strength' ? 'active-stat' : ''} ${roundState.phase === 'cards-flex' && roundState.player1StrongestStat === 'strength' ? 'flex-stat' : ''}`}>
                     <span className="stat-icon">💪</span>
                     <span className="stat-label">STR</span>
-                    <span className="stat-value">{player1Card.abilities.strength}</span>
+                    <span className="stat-value">
+                      {player1Card.abilities.strength}
+                      {player1Card.titleModifiers?.strength ? (
+                        <span style={{ color: '#4CAF50', fontSize: '0.7em', marginLeft: '2px' }}>
+                          ({player1Card.baseAbilities?.strength || 0}{player1Card.titleModifiers.strength > 0 ? '+' : ''}{player1Card.titleModifiers.strength})
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
-                  <div className={`stat-item ${currentRound.ability === 'speed' ? 'active-stat' : ''}`}>
+                  <div className={`stat-item ${(roundState.phase === 'ability' || roundState.phase === 'rolling' || roundState.phase === 'result') && currentRound.ability === 'speed' ? 'active-stat' : ''} ${roundState.phase === 'cards-flex' && roundState.player1StrongestStat === 'speed' ? 'flex-stat' : ''}`}>
                     <span className="stat-icon">⚡</span>
                     <span className="stat-label">SPD</span>
-                    <span className="stat-value">{player1Card.abilities.speed}</span>
+                    <span className="stat-value">
+                      {player1Card.abilities.speed}
+                      {player1Card.titleModifiers?.speed ? (
+                        <span style={{ color: '#4CAF50', fontSize: '0.7em', marginLeft: '2px' }}>
+                          ({player1Card.baseAbilities?.speed || 0}{player1Card.titleModifiers.speed > 0 ? '+' : ''}{player1Card.titleModifiers.speed})
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
-                  <div className={`stat-item ${currentRound.ability === 'agility' ? 'active-stat' : ''}`}>
+                  <div className={`stat-item ${(roundState.phase === 'ability' || roundState.phase === 'rolling' || roundState.phase === 'result') && currentRound.ability === 'agility' ? 'active-stat' : ''} ${roundState.phase === 'cards-flex' && roundState.player1StrongestStat === 'agility' ? 'flex-stat' : ''}`}>
                     <span className="stat-icon">🎯</span>
                     <span className="stat-label">AGL</span>
-                    <span className="stat-value">{player1Card.abilities.agility}</span>
+                    <span className="stat-value">
+                      {player1Card.abilities.agility}
+                      {player1Card.titleModifiers?.agility ? (
+                        <span style={{ color: '#4CAF50', fontSize: '0.7em', marginLeft: '2px' }}>
+                          ({player1Card.baseAbilities?.agility || 0}{player1Card.titleModifiers.agility > 0 ? '+' : ''}{player1Card.titleModifiers.agility})
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -265,7 +486,21 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
                 <div className="dice-area">
                   <div className="stat-display-large">
                     <span className="stat-label-large">{currentRound.ability.toUpperCase()}</span>
-                    <span className="stat-value-large">{currentRound.player1StatValue}</span>
+                    <span className="stat-value-large">
+                      {currentRound.player1StatValue}
+                      {(() => {
+                        const modifier = player1Card.titleModifiers?.[currentRound.ability as keyof typeof player1Card.titleModifiers];
+                        if (modifier) {
+                          const baseValue = player1Card.baseAbilities?.[currentRound.ability as keyof typeof player1Card.baseAbilities] || 0;
+                          return (
+                            <span style={{ color: '#4CAF50', fontSize: '0.6em', marginLeft: '8px' }}>
+                              ({baseValue}{modifier > 0 ? '+' : ''}{modifier})
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </span>
                   </div>
                   <div className="dice-roll-area">
                     <DiceRoll
@@ -325,7 +560,6 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
             </div>
 
             <div className={`player-side opponent ${roundState.phase === 'cards' ? 'slide-in-right' : ''}`}>
-              <h3>{battle.player2Name || 'AI Opponent'}</h3>
               <div className="battle-card-container">
                 {player2Card.imageUrl && (
                   <div className="card-battle-image">
@@ -334,20 +568,41 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
                 )}
                 <div className="card-name-display">{player2Card.fullName || player2Card.name}</div>
                 <div className="card-stats-display">
-                  <div className={`stat-item ${currentRound.ability === 'strength' ? 'active-stat' : ''}`}>
+                  <div className={`stat-item ${(roundState.phase === 'ability' || roundState.phase === 'rolling' || roundState.phase === 'result') && currentRound.ability === 'strength' ? 'active-stat' : ''} ${roundState.phase === 'cards-flex' && roundState.player2StrongestStat === 'strength' ? 'flex-stat' : ''}`}>
                     <span className="stat-icon">💪</span>
                     <span className="stat-label">STR</span>
-                    <span className="stat-value">{player2Card.abilities.strength}</span>
+                    <span className="stat-value">
+                      {player2Card.abilities.strength}
+                      {player2Card.titleModifiers?.strength ? (
+                        <span style={{ color: '#4CAF50', fontSize: '0.7em', marginLeft: '2px' }}>
+                          ({player2Card.baseAbilities?.strength || 0}{player2Card.titleModifiers.strength > 0 ? '+' : ''}{player2Card.titleModifiers.strength})
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
-                  <div className={`stat-item ${currentRound.ability === 'speed' ? 'active-stat' : ''}`}>
+                  <div className={`stat-item ${(roundState.phase === 'ability' || roundState.phase === 'rolling' || roundState.phase === 'result') && currentRound.ability === 'speed' ? 'active-stat' : ''} ${roundState.phase === 'cards-flex' && roundState.player2StrongestStat === 'speed' ? 'flex-stat' : ''}`}>
                     <span className="stat-icon">⚡</span>
                     <span className="stat-label">SPD</span>
-                    <span className="stat-value">{player2Card.abilities.speed}</span>
+                    <span className="stat-value">
+                      {player2Card.abilities.speed}
+                      {player2Card.titleModifiers?.speed ? (
+                        <span style={{ color: '#4CAF50', fontSize: '0.7em', marginLeft: '2px' }}>
+                          ({player2Card.baseAbilities?.speed || 0}{player2Card.titleModifiers.speed > 0 ? '+' : ''}{player2Card.titleModifiers.speed})
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
-                  <div className={`stat-item ${currentRound.ability === 'agility' ? 'active-stat' : ''}`}>
+                  <div className={`stat-item ${(roundState.phase === 'ability' || roundState.phase === 'rolling' || roundState.phase === 'result') && currentRound.ability === 'agility' ? 'active-stat' : ''} ${roundState.phase === 'cards-flex' && roundState.player2StrongestStat === 'agility' ? 'flex-stat' : ''}`}>
                     <span className="stat-icon">🎯</span>
                     <span className="stat-label">AGL</span>
-                    <span className="stat-value">{player2Card.abilities.agility}</span>
+                    <span className="stat-value">
+                      {player2Card.abilities.agility}
+                      {player2Card.titleModifiers?.agility ? (
+                        <span style={{ color: '#4CAF50', fontSize: '0.7em', marginLeft: '2px' }}>
+                          ({player2Card.baseAbilities?.agility || 0}{player2Card.titleModifiers.agility > 0 ? '+' : ''}{player2Card.titleModifiers.agility})
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -355,7 +610,21 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
                 <div className="dice-area">
                   <div className="stat-display-large">
                     <span className="stat-label-large">{currentRound.ability.toUpperCase()}</span>
-                    <span className="stat-value-large">{currentRound.player2StatValue}</span>
+                    <span className="stat-value-large">
+                      {currentRound.player2StatValue}
+                      {(() => {
+                        const modifier = player2Card.titleModifiers?.[currentRound.ability as keyof typeof player2Card.titleModifiers];
+                        if (modifier) {
+                          const baseValue = player2Card.baseAbilities?.[currentRound.ability as keyof typeof player2Card.baseAbilities] || 0;
+                          return (
+                            <span style={{ color: '#4CAF50', fontSize: '0.6em', marginLeft: '8px' }}>
+                              ({baseValue}{modifier > 0 ? '+' : ''}{modifier})
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </span>
                   </div>
                   <div className="dice-roll-area">
                     <DiceRoll
@@ -373,6 +642,30 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {roundState.phase === 'damage-victory' && (
+          <div className="damage-victory animated-zoom-in" style={{
+            textAlign: 'center',
+            padding: '40px',
+            background: 'linear-gradient(135deg, #ff6b6b, #ff4757)',
+            borderRadius: '20px',
+            boxShadow: '0 10px 30px rgba(255, 71, 87, 0.5)',
+            animation: 'pulse 1.5s infinite'
+          }}>
+            <h1 style={{ fontSize: '4em', marginBottom: '20px', color: '#fff' }}>💥 DAMAGE VICTORY! 💥</h1>
+            <div style={{ fontSize: '2.5em', marginBottom: '20px', color: '#fff' }}>
+              {(() => {
+                const damageRound = battle.rounds.find(r => r.damageDealt > 0);
+                return damageRound ? `${damageRound.damageDealt} DAMAGE DEALT!` : '';
+              })()}
+            </div>
+            <h2 style={{ fontSize: '3em', color: '#ffeb3b' }}>
+              {battle.winner === battle.player1Id ?
+                `${battle.player1Name} WINS BY DAMAGE!` :
+                `${battle.player2Name || 'AI Opponent'} WINS BY DAMAGE!`}
+            </h2>
           </div>
         )}
 
@@ -394,7 +687,11 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
               const winnerName = battle.winner === battle.player1Id ?
                 (battle.player1Name || 'Player 1') :
                 (battle.player2Name || 'AI Opponent');
-              voiceService.speakBattleComplete(winnerName);
+              // Only announce if not already announced in damage victory
+              const damageRound = battle.rounds.find(r => r.damageDealt > 0);
+              if (!damageRound) {
+                voiceService.speakBattleComplete(winnerName);
+              }
               return null;
             })()}
           </div>

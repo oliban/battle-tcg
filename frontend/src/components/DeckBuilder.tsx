@@ -147,6 +147,25 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ player, playerCards, onDeckUp
     setSelectedDeck(newDeckIds);
   };
 
+  const randomizeDeck = () => {
+    // Get all available card instance IDs
+    const allCardIds: string[] = [];
+    for (const group of groupedCards) {
+      allCardIds.push(...group.instanceIds);
+    }
+
+    // Shuffle the array using Fisher-Yates algorithm
+    const shuffled = [...allCardIds];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // Take the first 10 cards (or all if less than 10 available)
+    const newDeck = shuffled.slice(0, Math.min(10, shuffled.length));
+    setSelectedDeck(newDeck);
+  };
+
   const getDeckCards = (): Card[] => {
     return selectedDeck
       .map(id => playerCards.find(card => card.id === id))
@@ -159,6 +178,9 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ player, playerCards, onDeckUp
         <div className="section-header">
           <h3>Current Deck ({selectedDeck.length}/10)</h3>
           <div className="deck-actions">
+            <button onClick={randomizeDeck} disabled={groupedCards.length === 0}>
+              🎲 Randomize
+            </button>
             <button onClick={autoFillDeck} disabled={selectedDeck.length >= 10}>
               Auto-Fill
             </button>

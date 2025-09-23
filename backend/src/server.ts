@@ -9,7 +9,7 @@ import battleRoutes from './routes/battles';
 import shopRoutes from './routes/shop';
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8000;
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
@@ -26,7 +26,8 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Battle Card Game server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
+  console.log(`Network access: http://0.0.0.0:${PORT}/api/health`);
 });

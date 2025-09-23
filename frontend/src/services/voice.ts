@@ -11,7 +11,29 @@ class VoiceService {
 
     // Reload voices when they change
     if (speechSynthesis.onvoiceschanged !== undefined) {
-      speechSynthesis.onvoiceschanged = () => this.loadVoices();
+      speechSynthesis.onvoiceschanged = () => {
+        this.loadVoices();
+        // Try to set Google italiano as default if not already set
+        if (!this.selectedVoice) {
+          this.setDefaultVoice();
+        }
+      };
+    }
+
+    // Set default voice after a short delay to ensure voices are loaded
+    setTimeout(() => this.setDefaultVoice(), 500);
+  }
+
+  private setDefaultVoice() {
+    // Look for Google italiano voice
+    const googleItaliano = this.allVoices.find(voice =>
+      voice.name.toLowerCase().includes('google') &&
+      voice.name.toLowerCase().includes('italiano')
+    );
+
+    if (googleItaliano) {
+      this.selectedVoice = googleItaliano;
+      console.log('Default voice set to:', googleItaliano.name);
     }
   }
 
@@ -158,7 +180,7 @@ class VoiceService {
   }
 
   speakRoundIntro(round: number, player1Card: string, player2Card: string, ability?: string) {
-    let text = `Round ${round}. ${player1Card} contro ${player2Card}`;
+    let text = `${player1Card} contro ${player2Card}`;
     if (ability) {
       const abilityText = ability === 'strength' ? 'forza' :
                          ability === 'speed' ? 'velocità' :

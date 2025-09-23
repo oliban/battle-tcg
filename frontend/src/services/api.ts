@@ -1,7 +1,19 @@
 import axios from 'axios';
 import { Player, Card, Battle, BattleRound, Pack, Ability } from '../types';
 
-const API_BASE = 'http://localhost:8000/api';
+// Dynamically determine the API base URL
+// If accessed from localhost, use localhost. Otherwise use the actual host
+const getApiBase = () => {
+  const hostname = window.location.hostname;
+  // If we're on localhost, use localhost for API too
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8000/api';
+  }
+  // Otherwise, use the same hostname for API calls
+  return `http://${hostname}:8000/api`;
+};
+
+const API_BASE = getApiBase();
 
 const api = axios.create({
   baseURL: API_BASE,

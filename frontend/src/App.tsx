@@ -19,6 +19,7 @@ function App() {
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [collectionSortBy, setCollectionSortBy] = useState<'total' | 'strength' | 'speed' | 'agility' | 'rarity'>('total');
 
   useEffect(() => {
     const savedPlayerId = localStorage.getItem('playerId');
@@ -45,7 +46,18 @@ function App() {
     };
 
     // Load voices after a short delay
-    setTimeout(loadVoices, 100);
+    setTimeout(() => {
+      loadVoices();
+      // Set Google italiano as default selection in dropdown
+      const googleItaliano = voiceService.getAllVoices().find(voice =>
+        voice.name.toLowerCase().includes('google') &&
+        voice.name.toLowerCase().includes('italiano')
+      );
+      if (googleItaliano) {
+        setSelectedVoice(googleItaliano.name);
+        voiceService.setSelectedVoice(googleItaliano.name);
+      }
+    }, 500);
 
     // Reload voices on first user interaction (helps with some browsers)
     document.addEventListener('click', () => {
@@ -285,34 +297,73 @@ function App() {
 
         {currentView === 'collection' && (
           <div className="collection">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2>Your Collection</h2>
-              <button
-                onClick={async () => {
-                  if (player) {
-                    const cards = await playerAPI.getPlayerCards(player.id);
-                    setPlayerCards(cards);
-                  }
-                }}
-                style={{ padding: '5px 10px', fontSize: '14px' }}
-              >
-                Refresh Cards
-              </button>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <select
+                  value={collectionSortBy}
+                  onChange={(e) => setCollectionSortBy(e.target.value as typeof collectionSortBy)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '5px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <option value="total">Sort by Total Stats</option>
+                  <option value="strength">Sort by Strength</option>
+                  <option value="speed">Sort by Speed</option>
+                  <option value="agility">Sort by Agility</option>
+                  <option value="rarity">Sort by Rarity</option>
+                </select>
+                <button
+                  onClick={async () => {
+                    if (player) {
+                      const cards = await playerAPI.getPlayerCards(player.id);
+                      setPlayerCards(cards);
+                    }
+                  }}
+                  style={{ padding: '8px 12px', fontSize: '14px' }}
+                >
+                  Refresh Cards
+                </button>
+              </div>
             </div>
             {playerCards.length === 0 ? (
               <p>No cards yet. Create or buy some!</p>
             ) : (
               <div className="cards-grid">
                 {(() => {
-                  const cardCounts = playerCards.reduce((acc, card) => {
-                    if (!acc[card.id]) {
-                      acc[card.id] = { card, count: 0 };
+                  // Group cards by ID to handle duplicates
+                  const cardGroups = playerCards.reduce((acc, card) => {
+                    const baseId = card.id.split('_')[0];
+                    if (!acc[baseId]) {
+                      acc[baseId] = { card, count: 0 };
                     }
-                    acc[card.id].count++;
+                    acc[baseId].count++;
                     return acc;
                   }, {} as Record<string, { card: Card; count: number }>);
 
-                  return Object.values(cardCounts).map(({ card, count }) => (
+                  // Sort the grouped cards
+                  const sortedCards = Object.values(cardGroups).sort((a, b) => {
+                    const cardA = a.card;
+                    const cardB = b.card;
+
+                    if (collectionSortBy === 'strength') return cardB.abilities.strength - cardA.abilities.strength;
+                    if (collectionSortBy === 'speed') return cardB.abilities.speed - cardA.abilities.speed;
+                    if (collectionSortBy === 'agility') return cardB.abilities.agility - cardA.abilities.agility;
+                    if (collectionSortBy === 'rarity') {
+                      const rarityOrder: Record<string, number> = { rare: 3, uncommon: 2, common: 1 };
+                      return (rarityOrder[cardB.rarity] || 0) - (rarityOrder[cardA.rarity] || 0);
+                    }
+                    // Default: sort by total stats
+                    const totalA = cardA.abilities.strength + cardA.abilities.speed + cardA.abilities.agility;
+                    const totalB = cardB.abilities.strength + cardB.abilities.speed + cardB.abilities.agility;
+                    return totalB - totalA;
+                  });
+
+                  return sortedCards.map(({ card, count }) => (
                     <CardComponent key={card.id} card={card} count={count} />
                   ));
                 })()}

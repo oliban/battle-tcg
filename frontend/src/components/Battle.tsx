@@ -100,10 +100,11 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
         selectedOrder
       );
 
-      // If battle is ready (AI has set order), show ready state
+      // If battle is ready (AI has set order), execute immediately
       if (updatedBattle.status === 'ready') {
         setCurrentBattle(updatedBattle);
-        // Don't auto-execute, let user click button to start
+        // Execute battle immediately
+        await executeBattle();
       } else {
         setCurrentBattle(updatedBattle);
       }
@@ -201,6 +202,22 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
                   <span className="card-name">{round.player1CardName}</span>
                   <span className="calculation">
                     {round.player1StatValue} + 🎲{round.player1Roll} = {round.player1Total}
+                    {(() => {
+                      // Check if this card had modifiers for this ability
+                      const card = battleCards.find(c =>
+                        c.id === round.player1CardId ||
+                        c.id.split('_')[0] === round.player1CardId?.split('_')[0]
+                      );
+                      const modifier = card?.titleModifiers?.[round.ability as keyof typeof card.titleModifiers];
+                      if (modifier && modifier !== 0) {
+                        return (
+                          <span style={{ color: '#4CAF50', fontSize: '0.8em', marginLeft: '4px' }}>
+                            (incl. {modifier > 0 ? '+' : ''}{modifier})
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </span>
                 </div>
                 <div className="round-outcome">
@@ -210,6 +227,22 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
                   <span className="card-name">{round.player2CardName}</span>
                   <span className="calculation">
                     {round.player2StatValue} + 🎲{round.player2Roll} = {round.player2Total}
+                    {(() => {
+                      // Check if this card had modifiers for this ability
+                      const card = opponentCards.find(c =>
+                        c.id === round.player2CardId ||
+                        c.id.split('_')[0] === round.player2CardId?.split('_')[0]
+                      );
+                      const modifier = card?.titleModifiers?.[round.ability as keyof typeof card.titleModifiers];
+                      if (modifier && modifier !== 0) {
+                        return (
+                          <span style={{ color: '#4CAF50', fontSize: '0.8em', marginLeft: '4px' }}>
+                            (incl. {modifier > 0 ? '+' : ''}{modifier})
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </span>
                 </div>
               </div>
@@ -270,7 +303,7 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
           disabled={selectedOrder.length !== 3 || loading}
           className="submit-order-btn"
         >
-          Confirm Order
+          Start Battle
         </button>
       </div>
     );
@@ -375,15 +408,6 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards }) => {
         <>
           {currentBattle.status === 'waiting-for-order' && renderCardSelection()}
           {currentBattle.status === 'completed' && renderBattleResults()}
-          {currentBattle.status === 'ready' && (
-            <div className="battle-ready">
-              <h3>Battle Ready!</h3>
-              <p>Both players have selected their card orders.</p>
-              <button onClick={executeBattle} disabled={loading}>
-                Start Battle!
-              </button>
-            </div>
-          )}
         </>
       )}
 
