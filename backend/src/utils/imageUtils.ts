@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import sharp from 'sharp';
 
 const IMAGES_DIR = path.join(__dirname, '../../card_images');
 
@@ -9,9 +10,10 @@ if (!fs.existsSync(IMAGES_DIR)) {
 }
 
 /**
- * Save a base64 image to disk and return the filename
+ * Save a base64 image to disk synchronously and return the filename
+ * Keeps original image format
  */
-export function saveImageToDisk(base64Data: string, cardId: string): string | null {
+export function saveImageToDiskSync(base64Data: string, cardId: string): string | null {
   try {
     if (!base64Data || !base64Data.startsWith('data:image')) {
       return null;
@@ -24,12 +26,56 @@ export function saveImageToDisk(base64Data: string, cardId: string): string | nu
     }
 
     const [, format, base64] = matches;
-    const filename = `${cardId}.${format}`;
+    // Keep original format but normalize to common extensions
+    let ext = format.toLowerCase();
+    if (ext === 'jpeg') ext = 'jpg';
+    const filename = `${cardId}.${ext}`;
     const filepath = path.join(IMAGES_DIR, filename);
 
     // Convert base64 to buffer and save
     const buffer = Buffer.from(base64, 'base64');
     fs.writeFileSync(filepath, buffer);
+
+    console.log(`[ImageUtils] Saved image: ${filename}`);
+
+    // Return just the filename (not the full path)
+    return filename;
+  } catch (error) {
+    console.error(`Error saving image for card ${cardId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Save a base64 image to disk and return the filename
+ * Converts all images to PNG format for consistency
+ */
+export async function saveImageToDisk(base64Data: string, cardId: string): Promise<string | null> {
+  try {
+    if (!base64Data || !base64Data.startsWith('data:image')) {
+      return null;
+    }
+
+    // Extract the image format and base64 data
+    const matches = base64Data.match(/^data:image\/([a-z]+);base64,(.+)$/i);
+    if (!matches) {
+      return null;
+    }
+
+    const [, , base64] = matches;
+    // Always save as PNG for consistency
+    const filename = `${cardId}.png`;
+    const filepath = path.join(IMAGES_DIR, filename);
+
+    // Convert base64 to buffer
+    const buffer = Buffer.from(base64, 'base64');
+
+    // Use sharp to convert to PNG and save
+    await sharp(buffer)
+      .png()
+      .toFile(filepath);
+
+    console.log(`[ImageUtils] Converted and saved image as PNG: ${filename}`);
 
     // Return just the filename (not the full path)
     return filename;

@@ -1,6 +1,6 @@
 import { Player, Card, Battle, Pack, Notification, Challenge, BattleRound } from '../models/types';
 import { gameDb } from './database';
-import { saveImageToDisk, deleteImageFromDisk } from '../utils/imageUtils';
+import { saveImageToDiskSync, deleteImageFromDisk } from '../utils/imageUtils';
 
 class DbStore {
   private packs: Pack[] = [
@@ -127,9 +127,24 @@ class DbStore {
     let imageFileName = card.imageUrl || null;
 
     if (imageFileName) {
-      if (imageFileName.startsWith('data:image')) {
-        // If it's base64, save to disk
-        imageFileName = saveImageToDisk(imageFileName, card.id);
+      // Check if this is a variant card (ID contains underscore and timestamp)
+      const isVariant = card.id.includes('_') && card.id.match(/_\d{13}_/);
+
+      if (isVariant) {
+        // For variant cards, extract the base card ID and use its image
+        const baseCardId = card.id.split('_')[0];
+
+        // If the imageUrl already points to the base card image, extract just the filename
+        if (imageFileName.includes(baseCardId)) {
+          imageFileName = `${baseCardId}.png`;
+        } else if (imageFileName.startsWith('/images/card_images/')) {
+          // Extract just the filename from the path
+          imageFileName = imageFileName.replace('/images/card_images/', '');
+        }
+      } else if (imageFileName.startsWith('data:image')) {
+        // If it's base64 for a base card, save to disk synchronously
+        // For now, we'll save without conversion to avoid async issues
+        imageFileName = saveImageToDiskSync(imageFileName, card.id);
       } else if (imageFileName.startsWith('http://') || imageFileName.startsWith('https://')) {
         // If it has any full URL, extract just the filename
         const matches = imageFileName.match(/\/([^\/]+)$/);
@@ -217,34 +232,72 @@ class DbStore {
   }
 
   createBattle(battle: Battle): Battle {
-    gameDb.queries.insertBattle.run(
-      battle.id,
-      battle.player1Id,
-      battle.player2Id || null,
-      battle.player1Name || null,
-      battle.player2Name || null,
-      battle.isSimulation ? 1 : 0,
-      battle.status
-    );
+    console.log('[DbStore] Creating battle with player2Id:', battle.player2Id);
+
+    // First, verify all cards exist
+    if (battle.player1Cards) {
+      for (const cardId of battle.player1Cards) {
+        const card = this.getCard(cardId);
+        if (!card) {
+          console.error('[DbStore] Player1 card not found:', cardId);
+          throw new Error(`Player1 card not found: ${cardId}`);
+        }
+      }
+    }
+
+    if (battle.player2Cards) {
+      for (const cardId of battle.player2Cards) {
+        const card = this.getCard(cardId);
+        if (!card) {
+          console.error('[DbStore] Player2 card not found:', cardId);
+          throw new Error(`Player2 card not found: ${cardId}`);
+        }
+      }
+    }
+
+    try {
+      gameDb.queries.insertBattle.run(
+        battle.id,
+        battle.player1Id,
+        battle.player2Id || null,
+        battle.player1Name || null,
+        battle.player2Name || null,
+        battle.isSimulation ? 1 : 0,
+        battle.status
+      );
+    } catch (error) {
+      console.error('[DbStore] Failed to insert battle:', error);
+      throw error;
+    }
 
     // Store battle cards if provided
     if (battle.player1Cards && battle.player1Cards.length > 0) {
       battle.player1Cards.forEach((cardId, position) => {
-        const stmt = gameDb.connection.prepare(`
-          INSERT INTO battle_cards (battle_id, player, card_id, position, play_order)
-          VALUES (?, 1, ?, ?, ?)
-        `);
-        stmt.run(battle.id, cardId, position, battle.player1Order?.[position] ?? null);
+        try {
+          const stmt = gameDb.connection.prepare(`
+            INSERT INTO battle_cards (battle_id, player, card_id, position, play_order)
+            VALUES (?, 1, ?, ?, ?)
+          `);
+          stmt.run(battle.id, cardId, position, battle.player1Order?.[position] ?? null);
+        } catch (error) {
+          console.error('[DbStore] Failed to insert player1 battle card:', cardId, error);
+          throw error;
+        }
       });
     }
 
     if (battle.player2Cards && battle.player2Cards.length > 0) {
       battle.player2Cards.forEach((cardId, position) => {
-        const stmt = gameDb.connection.prepare(`
-          INSERT INTO battle_cards (battle_id, player, card_id, position, play_order)
-          VALUES (?, 2, ?, ?, ?)
-        `);
-        stmt.run(battle.id, cardId, position, battle.player2Order?.[position] ?? null);
+        try {
+          const stmt = gameDb.connection.prepare(`
+            INSERT INTO battle_cards (battle_id, player, card_id, position, play_order)
+            VALUES (?, 2, ?, ?, ?)
+          `);
+          stmt.run(battle.id, cardId, position, battle.player2Order?.[position] ?? null);
+        } catch (error) {
+          console.error('[DbStore] Failed to insert player2 battle card:', cardId, error);
+          throw error;
+        }
       });
     }
 
@@ -705,11 +758,20 @@ class DbStore {
     }).filter(Boolean) as Player[];
   }
 
+  // New method to get only base cards (no variants)
+  getBaseCards(): Card[] {
+    const rows = gameDb.queries.getAllCards.all();
+    return rows
+      .filter((row: any) => !row.id.includes('_'))
+      .map((row: any) => this.rowToCard(row));
+  }
+
   generatePackCards(packId: string): Card[] {
     const pack = this.getPack(packId);
     if (!pack) return [];
 
-    const allCards = this.getAllCards();
+    // CRITICAL: Only use base cards (no variants) for pack generation
+    const allCards = this.getBaseCards();
     if (allCards.length === 0) return [];
 
     const packCards: Card[] = [];

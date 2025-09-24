@@ -11,6 +11,8 @@ interface CardProps {
 }
 
 const Card: React.FC<CardProps> = ({ card, onClick, selected, count }) => {
+  const totalPoints = card.abilities.strength + card.abilities.speed + card.abilities.agility;
+
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'rare':
@@ -94,6 +96,11 @@ const Card: React.FC<CardProps> = ({ card, onClick, selected, count }) => {
             )}
           </span>
         </div>
+      </div>
+
+      <div className="card-total">
+        <span className="total-label">Total:</span>
+        <span className="total-value">{totalPoints}</span>
       </div>
     </div>
   );

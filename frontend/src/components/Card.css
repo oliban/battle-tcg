@@ -154,3 +154,24 @@
 .stat-value .modifier.negative {
   color: #ff6b6b;
 }
+
+.card-total {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-top: 1px solid rgba(236, 240, 241, 0.2);
+  background: rgba(52, 73, 94, 0.5);
+  font-weight: bold;
+}
+
+.total-label {
+  color: #95a5a6;
+  font-size: 14px;
+}
+
+.total-value {
+  color: #ecf0f1;
+  font-size: 18px;
+}

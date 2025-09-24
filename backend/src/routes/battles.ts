@@ -31,82 +31,101 @@ const selectBattleCards = (deck: string[]): string[] => {
 
 // Create a new battle (PvP or Simulation)
 router.post('/create', (req: Request, res: Response) => {
-  const { player1Id, player2Id, isSimulation } = req.body;
+  try {
+    const { player1Id, player2Id, isSimulation } = req.body;
 
-  const player1 = gameStore.getPlayer(player1Id);
-  if (!player1) {
-    return res.status(404).json({ error: 'Player 1 not found' });
-  }
-
-  if (!player1.deck || player1.deck.length !== 10) {
-    return res.status(400).json({ error: 'Player 1 must have a deck of exactly 10 cards' });
-  }
-
-  let player2Deck: string[];
-  let player2Name: string;
-
-  if (isSimulation) {
-    // Generate random opponent deck from card pool
-    const allCards = gameStore.getAllCards();
-    const randomCards = [...allCards]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 10)
-      .map(c => c.id);
-    player2Deck = randomCards;
-    player2Name = 'AI Opponent';
-  } else {
-    const player2 = gameStore.getPlayer(player2Id);
-    if (!player2) {
-      return res.status(404).json({ error: 'Player 2 not found' });
+    const player1 = gameStore.getPlayer(player1Id);
+    if (!player1) {
+      return res.status(404).json({ error: 'Player 1 not found' });
     }
-    if (!player2.deck || player2.deck.length !== 10) {
-      return res.status(400).json({ error: 'Player 2 must have a deck of exactly 10 cards' });
+
+    if (!player1.deck || player1.deck.length !== 10) {
+      return res.status(400).json({ error: 'Player 1 must have a deck of exactly 10 cards' });
     }
-    player2Deck = player2.deck;
-    player2Name = player2.name;
+
+    let player2Deck: string[];
+    let player2Name: string;
+
+    if (isSimulation) {
+      // Generate random opponent deck from all available cards
+      const allCards = gameStore.getAllCards();
+
+      // If no cards available, can't create simulation
+      if (allCards.length < 10) {
+        return res.status(400).json({ error: 'Not enough cards available for simulation. Create more cards first!' });
+      }
+
+      const randomCards = [...allCards]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 10)
+        .map(c => c.id);
+      player2Deck = randomCards;
+      player2Name = 'AI Opponent';
+    } else {
+      const player2 = gameStore.getPlayer(player2Id);
+      if (!player2) {
+        return res.status(404).json({ error: 'Player 2 not found' });
+      }
+      if (!player2.deck || player2.deck.length !== 10) {
+        return res.status(400).json({ error: 'Player 2 must have a deck of exactly 10 cards' });
+      }
+      player2Deck = player2.deck;
+      player2Name = player2.name;
+    }
+
+    // Select 3 random cards for each player
+    const player1Cards = selectBattleCards(player1.deck);
+    const player2Cards = selectBattleCards(player2Deck);
+
+    const battle: Battle = {
+      id: `battle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      player1Id,
+      player2Id: isSimulation ? null : player2Id,  // Use null for simulation battles
+      player1Name: player1.name,
+      player2Name,
+      isSimulation,
+      player1Deck: player1.deck,
+      player2Deck,
+      player1Cards,
+      player2Cards,
+      rounds: [],
+      currentRound: 0,
+      player1Points: 0,
+      player2Points: 0,
+      player1TotalDamage: 0,
+      player2TotalDamage: 0,
+      status: 'waiting-for-order',
+      createdAt: new Date()
+    };
+
+    const createdBattle = gameStore.createBattle(battle);
+
+    // If simulation, auto-set AI order and save it
+    if (isSimulation) {
+      const aiOrder = [0, 1, 2].sort(() => Math.random() - 0.5);
+
+      // Update the battle with AI's order (but keep status as waiting-for-order)
+      const battleWithAiOrder = gameStore.updateBattle(createdBattle.id, {
+        player2Order: aiOrder
+      });
+
+      if (battleWithAiOrder) {
+        Object.assign(createdBattle, battleWithAiOrder);
+      }
+    }
+
+    // Include card details for display
+    const player1CardDetails = createdBattle.player1Cards.map(id => gameStore.getCard(id));
+    const player2CardDetails = createdBattle.player2Cards.map(id => gameStore.getCard(id));
+
+    res.json({
+      ...createdBattle,
+      player1CardDetails,
+      player2CardDetails
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create battle: ' + (error as any).message });
   }
-
-  // Select 3 random cards for each player
-  const player1Cards = selectBattleCards(player1.deck);
-  const player2Cards = selectBattleCards(player2Deck);
-
-  const battle: Battle = {
-    id: `battle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    player1Id,
-    player2Id: player2Id || 'ai',
-    player1Name: player1.name,
-    player2Name,
-    isSimulation,
-    player1Deck: player1.deck,
-    player2Deck,
-    player1Cards,
-    player2Cards,
-    rounds: [],
-    currentRound: 0,
-    player1Points: 0,
-    player2Points: 0,
-    player1TotalDamage: 0,
-    player2TotalDamage: 0,
-    status: 'waiting-for-order',
-    createdAt: new Date()
-  };
-
-  const createdBattle = gameStore.createBattle(battle);
-
-  // If simulation, auto-set AI order
-  if (isSimulation) {
-    createdBattle.player2Order = [0, 1, 2].sort(() => Math.random() - 0.5);
-  }
-
-  // Include card details for display
-  const player1CardDetails = createdBattle.player1Cards.map(id => gameStore.getCard(id));
-  const player2CardDetails = createdBattle.player2Cards.map(id => gameStore.getCard(id));
-
-  res.json({
-    ...createdBattle,
-    player1CardDetails,
-    player2CardDetails
-  });
 });
 
 // Set card order for battle
@@ -165,18 +184,19 @@ router.post('/:battleId/set-order', (req: Request, res: Response) => {
 router.post('/:battleId/execute', (req: Request, res: Response) => {
   const { battleId } = req.params;
 
-  const battle = gameStore.getBattle(battleId);
-  if (!battle) {
-    return res.status(404).json({ error: 'Battle not found' });
-  }
+  try {
+    const battle = gameStore.getBattle(battleId);
+    if (!battle) {
+      return res.status(404).json({ error: 'Battle not found' });
+    }
 
-  if (battle.status !== 'ready') {
-    return res.status(400).json({ error: 'Battle is not ready to execute' });
-  }
+    if (battle.status !== 'ready') {
+      return res.status(400).json({ error: 'Battle is not ready to execute' });
+    }
 
-  if (!battle.player1Order || !battle.player2Order) {
-    return res.status(400).json({ error: 'Both players must set their card orders' });
-  }
+    if (!battle.player1Order || !battle.player2Order) {
+      return res.status(400).json({ error: 'Both players must set their card orders' });
+    }
 
   // Execute all 3 rounds
   const rounds: BattleRound[] = [];
@@ -249,14 +269,14 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
   }
 
   // Determine overall winner
-  let winner: string;
+  let winner: string | null;
   let winReason: 'points' | 'damage' | 'coin-toss';
 
   if (player1Points > player2Points) {
     winner = battle.player1Id;
     winReason = 'points';
   } else if (player2Points > player1Points) {
-    winner = battle.player2Id;
+    winner = battle.player2Id || 'ai';  // Use 'ai' for display if player2Id is null
     winReason = 'points';
   } else {
     // Points are tied, check damage
@@ -264,11 +284,11 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
       winner = battle.player1Id;
       winReason = 'damage';
     } else if (player2TotalDamage > player1TotalDamage) {
-      winner = battle.player2Id;
+      winner = battle.player2Id || 'ai';  // Use 'ai' for display if player2Id is null
       winReason = 'damage';
     } else {
       // Damage is also tied, coin toss
-      winner = Math.random() < 0.5 ? battle.player1Id : battle.player2Id;
+      winner = Math.random() < 0.5 ? battle.player1Id : (battle.player2Id || 'ai');
       winReason = 'coin-toss';
     }
   }
@@ -288,7 +308,7 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
   });
 
   // Update player statistics (only for real PvP battles)
-  if (!battle.isSimulation) {
+  if (!battle.isSimulation && battle.player2Id) {
     const player1 = gameStore.getPlayer(battle.player1Id);
     const player2 = gameStore.getPlayer(battle.player2Id);
 
@@ -334,19 +354,22 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
     }
   }
 
-  if (!updatedBattle) {
-    return res.status(500).json({ error: 'Failed to update battle' });
+    if (!updatedBattle) {
+      return res.status(500).json({ error: 'Failed to update battle' });
+    }
+
+    // Include card details for display
+    const player1CardDetails = updatedBattle.player1Cards.map(id => gameStore.getCard(id));
+    const player2CardDetails = updatedBattle.player2Cards.map(id => gameStore.getCard(id));
+
+    res.json({
+      ...updatedBattle,
+      player1CardDetails,
+      player2CardDetails
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to execute battle: ' + (error as any).message });
   }
-
-  // Include card details for display
-  const player1CardDetails = updatedBattle.player1Cards.map(id => gameStore.getCard(id));
-  const player2CardDetails = updatedBattle.player2Cards.map(id => gameStore.getCard(id));
-
-  res.json({
-    ...updatedBattle,
-    player1CardDetails,
-    player2CardDetails
-  });
 });
 
 // Get battle by ID

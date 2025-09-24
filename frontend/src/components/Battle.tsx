@@ -99,7 +99,7 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards, specificBattleId, 
       // Reset order selection
       setSelectedOrder([]);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to start battle');
+      setError(err.response?.data?.error || err.message || 'Failed to start battle');
     } finally {
       setLoading(false);
     }
@@ -123,7 +123,11 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards, specificBattleId, 
   };
 
   const submitCardOrder = async () => {
-    if (!currentBattle || selectedOrder.length !== 3) {
+    if (!currentBattle) {
+      setError('No battle found');
+      return;
+    }
+    if (selectedOrder.length !== 3) {
       setError('Please select the order for all 3 cards');
       return;
     }
@@ -382,7 +386,10 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards, specificBattleId, 
                   <p>Fight against AI opponents with random decks</p>
                   <p className="reward">Reward: 30 coins</p>
                   <button
-                    onClick={startSimulationBattle}
+                    onClick={() => {
+                      console.log('Button clicked!');
+                      startSimulationBattle();
+                    }}
                     disabled={loading}
                     className="start-battle-btn"
                   >

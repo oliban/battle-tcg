@@ -37,8 +37,30 @@ router.post('/buy-pack', (req: Request, res: Response) => {
   const titledCards = packCards.map((card: Card) => {
     // Create a new card instance with title
     const titledCard = applyTitleToCard({ ...card });
+
+    // Extract the base card ID (first part before any underscore)
+    const baseCardId = card.id.split('_')[0];
+
     // Give it a new unique ID since this is a new instance
-    titledCard.id = `${card.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    titledCard.id = `${baseCardId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Check which image file exists for this base card
+    const fs = require('fs');
+    const path = require('path');
+    const imagesDir = path.join(__dirname, '../../card_images');
+    const extensions = ['png', 'jpg', 'jpeg', 'webp'];
+    let foundExtension = 'png'; // default
+
+    for (const ext of extensions) {
+      const filePath = path.join(imagesDir, `${baseCardId}.${ext}`);
+      if (fs.existsSync(filePath)) {
+        foundExtension = ext;
+        break;
+      }
+    }
+
+    titledCard.imageUrl = `/images/card_images/${baseCardId}.${foundExtension}`;
+
     // Save the new titled card
     gameStore.createCard(titledCard);
     return titledCard;
