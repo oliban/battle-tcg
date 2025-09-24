@@ -22,7 +22,7 @@ function App() {
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [collectionSortBy, setCollectionSortBy] = useState<'total' | 'strength' | 'speed' | 'agility' | 'rarity'>('total');
+  const [collectionSortBy, setCollectionSortBy] = useState<'latest' | 'total' | 'strength' | 'speed' | 'agility' | 'rarity'>('latest');
   const [specificBattleId, setSpecificBattleId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -333,11 +333,12 @@ function App() {
                     cursor: 'pointer'
                   }}
                 >
-                  <option value="total">Sort by Total Stats</option>
-                  <option value="strength">Sort by Strength</option>
-                  <option value="speed">Sort by Speed</option>
-                  <option value="agility">Sort by Agility</option>
-                  <option value="rarity">Sort by Rarity</option>
+                  <option value="latest">Latest Added</option>
+                  <option value="total">Total Stats</option>
+                  <option value="strength">Strength</option>
+                  <option value="speed">Speed</option>
+                  <option value="agility">Agility</option>
+                  <option value="rarity">Rarity</option>
                 </select>
                 <button
                   onClick={async () => {
@@ -360,23 +361,25 @@ function App() {
                   // Don't group cards - show each variant separately
                   const individualCards = playerCards;
 
-                  // Sort the cards
-                  const sortedCards = individualCards.sort((a, b) => {
-                    const cardA = a;
-                    const cardB = b;
+                  // Sort the cards (skip sorting for 'latest' since backend already sorts by acquired_at DESC)
+                  const sortedCards = collectionSortBy === 'latest'
+                    ? [...individualCards]  // Use original order from backend
+                    : [...individualCards].sort((a, b) => {
+                        const cardA = a;
+                        const cardB = b;
 
-                    if (collectionSortBy === 'strength') return cardB.abilities.strength - cardA.abilities.strength;
-                    if (collectionSortBy === 'speed') return cardB.abilities.speed - cardA.abilities.speed;
-                    if (collectionSortBy === 'agility') return cardB.abilities.agility - cardA.abilities.agility;
-                    if (collectionSortBy === 'rarity') {
-                      const rarityOrder: Record<string, number> = { rare: 3, uncommon: 2, common: 1 };
-                      return (rarityOrder[cardB.rarity] || 0) - (rarityOrder[cardA.rarity] || 0);
-                    }
-                    // Default: sort by total stats
-                    const totalA = cardA.abilities.strength + cardA.abilities.speed + cardA.abilities.agility;
-                    const totalB = cardB.abilities.strength + cardB.abilities.speed + cardB.abilities.agility;
-                    return totalB - totalA;
-                  });
+                        if (collectionSortBy === 'strength') return cardB.abilities.strength - cardA.abilities.strength;
+                        if (collectionSortBy === 'speed') return cardB.abilities.speed - cardA.abilities.speed;
+                        if (collectionSortBy === 'agility') return cardB.abilities.agility - cardA.abilities.agility;
+                        if (collectionSortBy === 'rarity') {
+                          const rarityOrder: Record<string, number> = { rare: 3, uncommon: 2, common: 1 };
+                          return (rarityOrder[cardB.rarity] || 0) - (rarityOrder[cardA.rarity] || 0);
+                        }
+                        // Default: sort by total stats
+                        const totalA = cardA.abilities.strength + cardA.abilities.speed + cardA.abilities.agility;
+                        const totalB = cardB.abilities.strength + cardB.abilities.speed + cardB.abilities.agility;
+                        return totalB - totalA;
+                      });
 
                   return sortedCards.map((card) => (
                     <CardComponent key={card.id} card={card} />

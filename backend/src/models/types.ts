@@ -24,6 +24,7 @@ export interface Card {
     agility: number;
   };
   rarity: Rarity;
+  criticalHitChance?: number; // Percentage chance of critical hit (5-15%)
   createdAt: Date;
   createdBy: string;
 }
@@ -42,6 +43,22 @@ export interface Player {
   aiLosses?: number; // AI losses only
   rating?: number; // ELO-style rating for leaderboard
   lastActive?: Date;
+}
+
+export interface RewardType {
+  id: string;
+  name: string;
+  description: string;
+  category: 'voice' | 'card_back' | 'emote';
+  rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+  metadata?: string; // JSON string with type-specific data
+}
+
+export interface PlayerReward {
+  playerId: string;
+  rewardId: string;
+  unlockedAt: Date;
+  source: 'initial' | 'battle_win' | 'achievement' | 'purchase';
 }
 
 export interface Battle {
@@ -83,7 +100,9 @@ export interface BattleRound {
   player2StatValue: number; // Card's stat value for the chosen ability
   player1Total: number; // Stat + roll
   player2Total: number; // Stat + roll
-  damageDealt: number; // Difference between totals
+  player1CriticalHit?: boolean; // Whether player1 landed a critical hit
+  player2CriticalHit?: boolean; // Whether player2 landed a critical hit
+  damageDealt: number; // Difference between totals (doubled on critical hit)
   winner: 'player1' | 'player2' | 'draw';
 }
 

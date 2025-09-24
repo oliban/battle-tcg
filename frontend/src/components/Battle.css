@@ -478,6 +478,34 @@
   font-weight: bold;
 }
 
+.critical-hit-indicator {
+  display: inline-block;
+  margin-right: 10px;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #f39c12, #f1c40f);
+  color: #2c3e50;
+  border-radius: 15px;
+  font-weight: bold;
+  font-size: 12px;
+  text-transform: uppercase;
+  box-shadow: 0 2px 8px rgba(243, 156, 18, 0.4);
+  animation: criticalHitPulse 0.6s ease-out;
+}
+
+@keyframes criticalHitPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .rewards {
   text-align: center;
   margin: 20px 0;

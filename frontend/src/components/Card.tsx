@@ -8,9 +8,10 @@ interface CardProps {
   onClick?: () => void;
   selected?: boolean;
   count?: number;
+  hideCrit?: boolean;
 }
 
-const Card: React.FC<CardProps> = ({ card, onClick, selected, count }) => {
+const Card: React.FC<CardProps> = ({ card, onClick, selected, count, hideCrit }) => {
   const totalPoints = card.abilities.strength + card.abilities.speed + card.abilities.agility;
 
   const getRarityColor = (rarity: string) => {
@@ -54,6 +55,11 @@ const Card: React.FC<CardProps> = ({ card, onClick, selected, count }) => {
 
       {card.imageUrl && (
         <div className="card-image">
+          {card.criticalHitChance && !hideCrit && (
+            <div className="critical-hit-badge">
+              <span className="crit-text">Crit: {card.criticalHitChance}%</span>
+            </div>
+          )}
           <img src={card.imageUrl} alt={card.name} />
         </div>
       )}

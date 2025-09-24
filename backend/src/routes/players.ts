@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { gameStore } from '../data/store';
+import { dbStore } from '../data/dbStore';
 
 const router = Router();
 
@@ -18,7 +19,16 @@ router.post('/register', (req: Request, res: Response) => {
   } else {
     // Create new player (register)
     const player = gameStore.createPlayer(name.trim());
-    res.json({ player, isNewPlayer: true });
+
+    // Grant initial voice rewards to new player
+    const initialVoices = dbStore.grantInitialVoices(player.id);
+    console.log(`[Players] Granted ${initialVoices.length} initial voices to ${player.name}`);
+
+    res.json({
+      player,
+      isNewPlayer: true,
+      rewards: initialVoices
+    });
   }
 });
 

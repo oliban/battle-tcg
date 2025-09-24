@@ -297,6 +297,10 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards, specificBattleId, 
               </div>
               {round.damageDealt > 0 && (
                 <div className="damage-dealt">
+                  {((round.player1CriticalHit && round.winner === 'player1') ||
+                    (round.player2CriticalHit && round.winner === 'player2')) && (
+                    <span className="critical-hit-indicator">⚡ CRITICAL HIT! ⚡</span>
+                  )}
                   Damage: {round.damageDealt}
                 </div>
               )}

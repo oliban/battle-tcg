@@ -231,6 +231,14 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
     const player1Total = player1Stat + player1Roll;
     const player2Total = player2Stat + player2Roll;
 
+    // Check for critical hits
+    const player1CriticalHit = player1Card.criticalHitChance
+      ? Math.random() * 100 < player1Card.criticalHitChance
+      : false;
+    const player2CriticalHit = player2Card.criticalHitChance
+      ? Math.random() * 100 < player2Card.criticalHitChance
+      : false;
+
     // Determine round winner
     let roundWinner: 'player1' | 'player2' | 'draw';
     let damageDealt = 0;
@@ -238,11 +246,19 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
     if (player1Total > player2Total) {
       roundWinner = 'player1';
       damageDealt = player1Total - player2Total;
+      // Double damage on critical hit
+      if (player1CriticalHit) {
+        damageDealt *= 2;
+      }
       player1TotalDamage += damageDealt;
       player1Points++;
     } else if (player2Total > player1Total) {
       roundWinner = 'player2';
       damageDealt = player2Total - player1Total;
+      // Double damage on critical hit
+      if (player2CriticalHit) {
+        damageDealt *= 2;
+      }
       player2TotalDamage += damageDealt;
       player2Points++;
     } else {
@@ -263,6 +279,8 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
       player2StatValue: player2Stat,
       player1Total,
       player2Total,
+      player1CriticalHit,
+      player2CriticalHit,
       damageDealt,
       winner: roundWinner
     });
@@ -354,19 +372,19 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
     }
   }
 
-    if (!updatedBattle) {
-      return res.status(500).json({ error: 'Failed to update battle' });
-    }
+  if (!updatedBattle) {
+    return res.status(500).json({ error: 'Failed to update battle' });
+  }
 
-    // Include card details for display
-    const player1CardDetails = updatedBattle.player1Cards.map(id => gameStore.getCard(id));
-    const player2CardDetails = updatedBattle.player2Cards.map(id => gameStore.getCard(id));
+  // Include card details for display
+  const player1CardDetails = updatedBattle.player1Cards.map(id => gameStore.getCard(id));
+  const player2CardDetails = updatedBattle.player2Cards.map(id => gameStore.getCard(id));
 
-    res.json({
-      ...updatedBattle,
-      player1CardDetails,
-      player2CardDetails
-    });
+  res.json({
+    ...updatedBattle,
+    player1CardDetails,
+    player2CardDetails
+  });
   } catch (error) {
     res.status(500).json({ error: 'Failed to execute battle: ' + (error as any).message });
   }

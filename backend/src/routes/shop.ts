@@ -44,6 +44,9 @@ router.post('/buy-pack', (req: Request, res: Response) => {
     // Give it a new unique ID since this is a new instance
     titledCard.id = `${baseCardId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Assign random critical hit chance between 5% and 15%
+    titledCard.criticalHitChance = Math.floor(Math.random() * 11) + 5;
+
     // Check which image file exists for this base card
     const fs = require('fs');
     const path = require('path');

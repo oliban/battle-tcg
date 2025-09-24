@@ -30,7 +30,13 @@
 
 .player-name {
   font-size: 20px;
-  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.95);
+  color: #282c34;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid #61dafb;
 }
 
 .score {

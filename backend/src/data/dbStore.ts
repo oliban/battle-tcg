@@ -112,9 +112,17 @@ class DbStore {
         // First, remove all current card associations
         gameDb.connection.prepare('DELETE FROM player_cards WHERE player_id = ?').run(id);
 
-        // Then add all cards from the update
+        // Then add all cards from the update with incrementing timestamps to maintain order
+        let index = 0;
+        const baseTime = Date.now();
         for (const cardId of updatedCards) {
-          gameDb.queries.addCardToPlayer.run(id, cardId);
+          // Add small increments to ensure different timestamps
+          const timestamp = new Date(baseTime + index).toISOString();
+          // Use direct SQL with explicit timestamp
+          gameDb.connection.prepare(
+            'INSERT OR IGNORE INTO player_cards (player_id, card_id, acquired_at) VALUES (?, ?, ?)'
+          ).run(id, cardId, timestamp);
+          index++;
         }
       });
     }
@@ -136,7 +144,9 @@ class DbStore {
 
         // If the imageUrl already points to the base card image, extract just the filename
         if (imageFileName.includes(baseCardId)) {
-          imageFileName = `${baseCardId}.png`;
+          // Keep the original extension from the imageUrl
+          const extension = imageFileName.split('.').pop() || 'png';
+          imageFileName = `${baseCardId}.${extension}`;
         } else if (imageFileName.startsWith('/images/card_images/')) {
           // Extract just the filename from the path
           imageFileName = imageFileName.replace('/images/card_images/', '');
@@ -178,6 +188,7 @@ class DbStore {
       card.titleModifiers?.speed || 0,
       card.titleModifiers?.agility || 0,
       card.rarity,
+      card.criticalHitChance || null,
       card.createdBy
     );
 
@@ -425,6 +436,7 @@ class DbStore {
       `);
 
       newRounds.forEach((round: BattleRound) => {
+        // Store the full card IDs (including instance suffixes)
         stmt.run(
           id, round.roundNumber,
           round.player1CardId, round.player2CardId,
@@ -690,6 +702,7 @@ class DbStore {
         agility: row.title_modifier_agility || 0
       } : undefined,
       rarity: row.rarity,
+      criticalHitChance: row.critical_hit_chance,
       createdAt: new Date(row.created_at),
       createdBy: row.created_by
     };
@@ -796,6 +809,115 @@ class DbStore {
     }
 
     return packCards;
+  }
+
+  // Reward system methods
+  getAllRewardTypes(): any[] {
+    return gameDb.queries.getAllRewardTypes.all();
+  }
+
+  getRewardTypesByCategory(category: string): any[] {
+    return gameDb.queries.getRewardTypesByCategory.all(category);
+  }
+
+  getPlayerRewards(playerId: string): any[] {
+    return gameDb.queries.getPlayerRewards.all(playerId);
+  }
+
+  hasPlayerReward(playerId: string, rewardId: string): boolean {
+    const result = gameDb.queries.hasPlayerReward.get(playerId, rewardId);
+    return result.count > 0;
+  }
+
+  grantPlayerReward(playerId: string, rewardId: string, source: string = 'battle_win'): boolean {
+    // Check if player already has this reward
+    if (this.hasPlayerReward(playerId, rewardId)) {
+      return false;
+    }
+
+    try {
+      gameDb.queries.addPlayerReward.run(playerId, rewardId, source);
+      return true;
+    } catch (error) {
+      console.error('[DbStore] Failed to grant reward:', error);
+      return false;
+    }
+  }
+
+  getAvailableRewards(playerId: string, category?: string): any[] {
+    let rewards = gameDb.queries.getAvailableRewards.all(playerId);
+    if (category) {
+      rewards = rewards.filter((r: any) => r.category === category);
+    }
+    return rewards;
+  }
+
+  // Grant random reward from available pool
+  grantRandomReward(playerId: string, category: string = 'voice', rarityWeights?: Record<string, number>): any | null {
+    const availableRewards = this.getAvailableRewards(playerId, category);
+    if (availableRewards.length === 0) {
+      return null;
+    }
+
+    // Default rarity weights if not provided
+    const weights = rarityWeights || {
+      common: 50,
+      uncommon: 30,
+      rare: 15,
+      epic: 4,
+      legendary: 1
+    };
+
+    // Filter rewards by weighted random selection
+    const weightedRewards: any[] = [];
+    availableRewards.forEach(reward => {
+      const weight = weights[reward.rarity] || 1;
+      for (let i = 0; i < weight; i++) {
+        weightedRewards.push(reward);
+      }
+    });
+
+    if (weightedRewards.length === 0) {
+      return null;
+    }
+
+    const randomIndex = Math.floor(Math.random() * weightedRewards.length);
+    const selectedReward = weightedRewards[randomIndex];
+
+    if (this.grantPlayerReward(playerId, selectedReward.id, 'battle_win')) {
+      return selectedReward;
+    }
+
+    return null;
+  }
+
+  // Grant initial voices to new player
+  grantInitialVoices(playerId: string): any[] {
+    const grantedRewards: any[] = [];
+
+    // Always grant Italian voice first
+    const italianVoice = 'voice_google_it_IT';
+    if (this.grantPlayerReward(playerId, italianVoice, 'initial')) {
+      const reward = gameDb.connection.prepare('SELECT * FROM reward_types WHERE id = ?').get(italianVoice);
+      if (reward) grantedRewards.push(reward);
+    }
+
+    // Get available common voices
+    const availableVoices = this.getAvailableRewards(playerId, 'voice')
+      .filter((v: any) => v.rarity === 'common');
+
+    // Grant 2 more random common voices
+    for (let i = 0; i < 2 && availableVoices.length > 0; i++) {
+      const randomIndex = Math.floor(Math.random() * availableVoices.length);
+      const voice = availableVoices[randomIndex];
+
+      if (this.grantPlayerReward(playerId, voice.id, 'initial')) {
+        grantedRewards.push(voice);
+        availableVoices.splice(randomIndex, 1); // Remove from available list
+      }
+    }
+
+    return grantedRewards;
   }
 }
 

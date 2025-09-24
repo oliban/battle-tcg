@@ -19,7 +19,7 @@ interface DeckBuilderProps {
 const DeckBuilder: React.FC<DeckBuilderProps> = ({ player, playerCards, onDeckUpdate }) => {
   const [selectedDeck, setSelectedDeck] = useState<string[]>(player.deck || []);
   const [groupedCards, setGroupedCards] = useState<CardGroup[]>([]);
-  const [sortBy, setSortBy] = useState<'strength' | 'speed' | 'agility' | 'total' | 'rarity'>('total');
+  const [sortBy, setSortBy] = useState<'latest' | 'strength' | 'speed' | 'agility' | 'total' | 'rarity'>('latest');
 
   // Group cards by their base properties (name, stats, etc.)
   const groupCards = (cards: Card[]): CardGroup[] => {
@@ -53,7 +53,20 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ player, playerCards, onDeckUp
   };
 
   useEffect(() => {
-    // Group and sort cards whenever playerCards or sortBy changes
+    // For "Latest Added", don't group cards - show each individual card
+    if (sortBy === 'latest') {
+      // Convert individual cards to single-card groups for consistency with the component's structure
+      const individualGroups = playerCards.map(card => ({
+        baseCard: card,
+        count: 1,
+        instanceIds: [card.id],
+        inDeckCount: selectedDeck.includes(card.id) ? 1 : 0
+      }));
+      setGroupedCards(individualGroups);
+      return;
+    }
+
+    // Group and sort cards for other sort options
     const grouped = groupCards(playerCards);
 
     // Sort the grouped cards
@@ -227,11 +240,12 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ player, playerCards, onDeckUp
             <select
               value={sortBy}
               onChange={(e) => {
-                const newSort = e.target.value as 'strength' | 'speed' | 'agility' | 'total' | 'rarity';
+                const newSort = e.target.value as 'latest' | 'strength' | 'speed' | 'agility' | 'total' | 'rarity';
                 console.log('Changing sort to:', newSort);
                 setSortBy(newSort);
               }}
             >
+              <option value="latest">Latest Added</option>
               <option value="total">Total Stats</option>
               <option value="strength">Strength</option>
               <option value="speed">Speed</option>

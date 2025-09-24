@@ -11,6 +11,7 @@ import notificationRoutes from './routes/notifications';
 import challengeRoutes from './routes/challenges';
 import leaderboardRoutes from './routes/leaderboard';
 import imageRoutes from './routes/images';
+import rewardRoutes from './routes/rewards';
 
 const app = express();
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8000;
@@ -28,6 +29,7 @@ app.use('/api/shop', shopRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/rewards', rewardRoutes);
 app.use('/images/card_images', imageRoutes);
 
 app.get('/api/health', (req, res) => {

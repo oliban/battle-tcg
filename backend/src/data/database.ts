@@ -59,8 +59,8 @@ class GameDatabase {
           strength, speed, agility,
           base_strength, base_speed, base_agility,
           title_modifier_strength, title_modifier_speed, title_modifier_agility,
-          rarity, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          rarity, critical_hit_chance, created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `),
 
       // Player cards
@@ -68,6 +68,7 @@ class GameDatabase {
         SELECT c.* FROM cards c
         JOIN player_cards pc ON c.id = pc.card_id
         WHERE pc.player_id = ?
+        ORDER BY pc.acquired_at DESC, pc.rowid DESC
       `),
       addCardToPlayer: this.db.prepare(`
         INSERT OR IGNORE INTO player_cards (player_id, card_id) VALUES (?, ?)
@@ -140,6 +141,36 @@ class GameDatabase {
       // Stats query using the view
       getPlayerStats: this.db.prepare(`
         SELECT * FROM player_stats WHERE id = ?
+      `),
+
+      // Reward queries
+      getAllRewardTypes: this.db.prepare(`
+        SELECT * FROM reward_types ORDER BY category, rarity
+      `),
+      getRewardTypesByCategory: this.db.prepare(`
+        SELECT * FROM reward_types WHERE category = ? ORDER BY rarity
+      `),
+      getPlayerRewards: this.db.prepare(`
+        SELECT r.*, rt.name, rt.description, rt.category, rt.rarity, rt.metadata
+        FROM player_rewards r
+        JOIN reward_types rt ON r.reward_id = rt.id
+        WHERE r.player_id = ?
+        ORDER BY r.unlocked_at DESC
+      `),
+      addPlayerReward: this.db.prepare(`
+        INSERT INTO player_rewards (player_id, reward_id, source)
+        VALUES (?, ?, ?)
+      `),
+      hasPlayerReward: this.db.prepare(`
+        SELECT COUNT(*) as count FROM player_rewards
+        WHERE player_id = ? AND reward_id = ?
+      `),
+      getAvailableRewards: this.db.prepare(`
+        SELECT * FROM reward_types
+        WHERE id NOT IN (
+          SELECT reward_id FROM player_rewards WHERE player_id = ?
+        )
+        ORDER BY category, rarity
       `)
     };
   }

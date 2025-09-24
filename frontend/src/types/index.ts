@@ -24,6 +24,7 @@ export interface Card {
     agility: number;
   };
   rarity: Rarity;
+  criticalHitChance?: number; // Percentage chance of critical hit (5-15%)
   createdAt: string;
   createdBy: string;
 }
@@ -83,6 +84,8 @@ export interface BattleRound {
   player2StatValue: number;
   player1Total: number;
   player2Total: number;
+  player1CriticalHit?: boolean; // Whether player1 landed a critical hit
+  player2CriticalHit?: boolean; // Whether player2 landed a critical hit
   damageDealt: number;
   winner: 'player1' | 'player2' | 'draw';
 }
