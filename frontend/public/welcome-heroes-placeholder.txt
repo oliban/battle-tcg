@@ -1,0 +1,1 @@
+Save the anime-style welcome image as "welcome-heroes.png" in this public folder to display it on the welcome screen.

@@ -14,19 +14,32 @@ const PackOpening: React.FC<PackOpeningProps> = ({ cards, onComplete }) => {
   const [currentRevealIndex, setCurrentRevealIndex] = useState(-1);
   const [isOpening, setIsOpening] = useState(false);
   const [packOpened, setPackOpened] = useState(false);
+  const [showSmoke, setShowSmoke] = useState(false);
+  const [packDisappeared, setPackDisappeared] = useState(false);
 
   const handleOpenPack = () => {
     setIsOpening(true);
-    setPackOpened(true);
 
     // Announce pack opening
     voiceService.speak('Apertura del pacco!', { rate: 0.9, pitch: 1.2 });
 
-    // Start revealing cards after pack animation
+    // Start smoke effect after 500ms
     setTimeout(() => {
+      setShowSmoke(true);
+    }, 500);
+
+    // Hide pack and show cards after smoke starts
+    setTimeout(() => {
+      setPackDisappeared(true);
+      setPackOpened(true);
       setCurrentRevealIndex(0);
       startRevealSequence();
-    }, 1000);
+    }, 1500);
+
+    // Remove smoke after cards are revealed
+    setTimeout(() => {
+      setShowSmoke(false);
+    }, 2000);
   };
 
   const startRevealSequence = () => {
@@ -76,19 +89,27 @@ const PackOpening: React.FC<PackOpeningProps> = ({ cards, onComplete }) => {
 
       {!packOpened ? (
         <div className="pack-wrapper">
-          <div className={`pack ${isOpening ? 'opening' : ''}`} onClick={handleOpenPack}>
-            <div className="pack-front">
-              <div className="pack-design">
-                <h3>Battle Cards</h3>
-                <div className="pack-icon">⚔️</div>
-                <p>5 Cards</p>
+          <div
+            className={`pack-image-container ${packDisappeared ? 'disappearing' : ''} ${isOpening ? 'shaking' : ''}`}
+            onClick={!isOpening ? handleOpenPack : undefined}
+          >
+            <img
+              src="/images/BTCG-pack.png"
+              alt="Card Pack"
+              className="pack-image"
+              style={{ height: '300px', width: 'auto' }}
+            />
+            {showSmoke && (
+              <div className="smoke-effect">
+                <div className="smoke-cloud smoke-1"></div>
+                <div className="smoke-cloud smoke-2"></div>
+                <div className="smoke-cloud smoke-3"></div>
+                <div className="smoke-cloud smoke-4"></div>
+                <div className="smoke-cloud smoke-5"></div>
               </div>
-            </div>
-            <div className="pack-back">
-              <div className="pack-shine"></div>
-            </div>
+            )}
           </div>
-          <p className="instruction">Click the pack to open!</p>
+          {!isOpening && <p className="instruction">Click the pack to open!</p>}
         </div>
       ) : (
         <div className="cards-reveal-container">

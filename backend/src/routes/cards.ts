@@ -22,9 +22,9 @@ router.post('/create', (req: Request, res: Response) => {
   console.log('[Card Create] Request received:', req.body);
   const { playerId, name, description, imageUrl, abilities, rarity, totalCost } = req.body;
 
-  if (!playerId || !name || !abilities || !rarity) {
+  if (!playerId || !name || !abilities || !rarity || !imageUrl) {
     console.log('[Card Create] Missing required fields');
-    return res.status(400).json({ error: 'Missing required fields' });
+    return res.status(400).json({ error: 'Missing required fields (name, image, abilities, and rarity are required)' });
   }
 
   let player = gameStore.getPlayer(playerId);

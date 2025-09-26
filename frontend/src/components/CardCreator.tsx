@@ -33,6 +33,11 @@ const CardCreator: React.FC<CardCreatorProps> = ({ playerId, coins, onCardCreate
       return;
     }
 
+    if (!imageUrl) {
+      setError('Card image is required');
+      return;
+    }
+
     if (coins < 50) {
       setError('Insufficient coins (need at least 50)');
       return;
@@ -88,6 +93,11 @@ const CardCreator: React.FC<CardCreatorProps> = ({ playerId, coins, onCardCreate
       return;
     }
 
+    if (!imageUrl) {
+      setError('Card image is required');
+      return;
+    }
+
     if (coins < totalCost) {
       setError(`Insufficient coins (need ${totalCost})`);
       return;
@@ -100,11 +110,11 @@ const CardCreator: React.FC<CardCreatorProps> = ({ playerId, coins, onCardCreate
       const result = await cardAPI.createCard(
         playerId,
         name,
-        description,
+        description || '',
         preview.abilities,
         preview.rarity,
         totalCost,
-        imageUrl || undefined
+        imageUrl
       );
 
       onCardCreated(result.card, result.remainingCoins);
@@ -171,11 +181,11 @@ const CardCreator: React.FC<CardCreatorProps> = ({ playerId, coins, onCardCreate
       </div>
 
       <div className="form-group">
-        <label>Description:</label>
+        <label>Description (optional):</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe your card"
+          placeholder="Describe your card (optional)"
           maxLength={200}
           disabled={preview !== null}
         />
@@ -209,7 +219,7 @@ const CardCreator: React.FC<CardCreatorProps> = ({ playerId, coins, onCardCreate
       </div>
 
       <div className="form-group">
-        <label>Card Image (optional):</label>
+        <label>Card Image (required):</label>
         <input
           type="file"
           accept="image/*"
@@ -227,7 +237,7 @@ const CardCreator: React.FC<CardCreatorProps> = ({ playerId, coins, onCardCreate
         <div className="creator-actions">
           <button
             onClick={handleGeneratePreview}
-            disabled={isLoading || !name.trim() || coins < 50}
+            disabled={isLoading || !name.trim() || !imageUrl || coins < 50}
             className="generate-button"
           >
             {isLoading ? 'Generating...' : 'Generate Stats (50 coins)'}

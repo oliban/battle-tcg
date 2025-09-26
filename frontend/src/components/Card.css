@@ -149,7 +149,6 @@
   background: linear-gradient(135deg, #2c3e50, #34495e);
   border: 3px solid;
   border-image: linear-gradient(135deg, #8b6508, #b8860b, #8b6508) 1;
-  border-radius: 8px;
   margin: 0 -5px 12px -5px;
   display: flex;
   align-items: center;

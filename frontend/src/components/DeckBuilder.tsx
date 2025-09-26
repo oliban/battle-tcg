@@ -92,7 +92,6 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ player, playerCards, onDeckUp
 
   const addCardToDeck = (cardGroup: CardGroup) => {
     if (selectedDeck.length >= 10) {
-      alert('Deck is full! Maximum 10 cards allowed.');
       return;
     }
 
@@ -120,7 +119,6 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ player, playerCards, onDeckUp
 
   const saveDeck = () => {
     if (selectedDeck.length !== 10) {
-      alert('Deck must contain exactly 10 cards!');
       return;
     }
     onDeckUpdate(selectedDeck);

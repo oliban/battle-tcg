@@ -23,6 +23,30 @@ function App() {
   const [selectedVoice, setSelectedVoice] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [collectionSortBy, setCollectionSortBy] = useState<'latest' | 'total' | 'strength' | 'speed' | 'agility' | 'rarity'>('latest');
+  const [previousView, setPreviousView] = useState<typeof currentView>('home');
+  const [playerName, setPlayerName] = useState<string>('');
+
+  // Auto-refresh collection when navigating to it
+  useEffect(() => {
+    if (currentView === 'collection' && previousView !== 'collection' && player) {
+      playerAPI.getPlayerCards(player.id).then(cards => {
+        setPlayerCards(cards);
+      }).catch(err => {
+        console.error('Failed to refresh collection:', err);
+      });
+    }
+    setPreviousView(currentView);
+  }, [currentView, player, previousView]);
+
+  // Auto-fade error messages after 6 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   useEffect(() => {
     const savedPlayerId = localStorage.getItem('playerId');
@@ -99,12 +123,14 @@ function App() {
   };
 
   const handleRegister = async () => {
-    const name = prompt('Enter your player name:');
-    if (!name) return;
+    if (!playerName.trim()) {
+      setError('Please enter your name');
+      return;
+    }
 
     try {
       setLoading(true);
-      const result = await playerAPI.register(name);
+      const result = await playerAPI.register(playerName.trim());
       setPlayer(result.player);
       localStorage.setItem('playerId', result.player.id);
 
@@ -116,7 +142,6 @@ function App() {
         const cards = await playerAPI.getPlayerCards(result.player.id);
         setPlayerCards(cards);
         setError(''); // Clear any previous errors
-        alert(`Welcome back, ${result.player.name}!`);
       }
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to register/login');
@@ -162,7 +187,6 @@ function App() {
       setLoading(true);
       const updatedPlayer = await playerAPI.updateDeck(player.id, deck);
       setPlayer(updatedPlayer);
-      alert('Deck saved successfully!');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to save deck');
     } finally {
@@ -176,16 +200,89 @@ function App() {
 
   if (!player) {
     return (
-      <div className="App">
-        <header className="App-header">
-          <h1>Battle Card Game</h1>
-          <button onClick={handleRegister} className="register-button">
-            Enter / Login
-          </button>
-          <p style={{ color: 'white', marginTop: '10px', fontSize: '14px' }}>
-            Enter your name to login or create a new account
-          </p>
-        </header>
+      <div className="App welcome-screen">
+        <div className="welcome-hero-section">
+          <div className="welcome-content">
+            <h1 className="welcome-title">Battle Card Game</h1>
+            <h2 className="welcome-subtitle">Join the Adventure!</h2>
+
+            <div className="welcome-features">
+              <div className="feature-item">
+                <span className="feature-icon">🎨</span>
+                <span>Create Custom Cards</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">⚔️</span>
+                <span>Battle Other Players</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">🏆</span>
+                <span>Climb the Leaderboard</span>
+              </div>
+            </div>
+
+            <div className="name-input-group">
+              <input
+                type="text"
+                placeholder="Enter your name..."
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleRegister();
+                  }
+                }}
+                className="name-input"
+                maxLength={20}
+                autoFocus
+              />
+              <button
+                onClick={handleRegister}
+                className="register-button hero-button"
+                disabled={!playerName.trim()}
+              >
+                Start Your Journey
+              </button>
+            </div>
+            {error && <p className="error-message">{error}</p>}
+            <p className="welcome-hint">
+              Enter your name to create a new account or login
+            </p>
+          </div>
+
+          <div className="welcome-image-container">
+            <div className="image-wrapper">
+              <img
+                src="/images/welcome-heroes.png"
+                alt="Game Heroes"
+                className="welcome-heroes-image"
+                onError={(e) => {
+                  // Hide image and show fallback
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+              <div className="image-fallback" style={{ display: 'none' }}>
+                <div className="fallback-content">
+                  <div className="card-icons">
+                    <span>🎴</span>
+                    <span>⚔️</span>
+                    <span>🏆</span>
+                  </div>
+                  <h3>Epic Battles Await</h3>
+                  <p>Create legendary cards and challenge players worldwide!</p>
+                </div>
+              </div>
+              <div className="image-overlay">
+                <div className="overlay-text">
+                  <h3>Assemble Your Team</h3>
+                  <p>Collect unique cards and build the ultimate deck!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -313,37 +410,24 @@ function App() {
           <div className="collection">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2>Your Collection</h2>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <select
-                  value={collectionSortBy}
-                  onChange={(e) => setCollectionSortBy(e.target.value as typeof collectionSortBy)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '5px',
-                    border: '1px solid #ddd',
-                    fontSize: '14px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value="latest">Latest Added</option>
-                  <option value="total">Total Stats</option>
-                  <option value="strength">Strength</option>
-                  <option value="speed">Speed</option>
-                  <option value="agility">Agility</option>
-                  <option value="rarity">Rarity</option>
-                </select>
-                <button
-                  onClick={async () => {
-                    if (player) {
-                      const cards = await playerAPI.getPlayerCards(player.id);
-                      setPlayerCards(cards);
-                    }
-                  }}
-                  style={{ padding: '8px 12px', fontSize: '14px' }}
-                >
-                  Refresh Cards
-                </button>
-              </div>
+              <select
+                value={collectionSortBy}
+                onChange={(e) => setCollectionSortBy(e.target.value as typeof collectionSortBy)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: '5px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="latest">Latest Added</option>
+                <option value="total">Total Stats</option>
+                <option value="strength">Strength</option>
+                <option value="speed">Speed</option>
+                <option value="agility">Agility</option>
+                <option value="rarity">Rarity</option>
+              </select>
             </div>
             {playerCards.length === 0 ? (
               <p>No cards yet. Create or buy some!</p>

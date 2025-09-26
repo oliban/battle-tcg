@@ -61,6 +61,114 @@
   flex-direction: column;
   align-items: center;
   margin-top: 50px;
+  position: relative;
+}
+
+/* Pack Image Container */
+.pack-image-container {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.pack-image {
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5));
+  transition: transform 0.3s ease;
+}
+
+.pack-image-container:hover .pack-image {
+  transform: scale(1.05);
+}
+
+.pack-image-container.shaking {
+  animation: shake 0.5s ease-in-out;
+}
+
+.pack-image-container.disappearing {
+  animation: fadeOut 0.5s ease-out forwards;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8); }
+}
+
+/* Smoke Effect */
+.smoke-effect {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  height: 400px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.smoke-cloud {
+  position: absolute;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(20px);
+  animation: smokeRise 2s ease-out forwards;
+}
+
+.smoke-1 {
+  top: 40%;
+  left: 30%;
+  animation-delay: 0s;
+}
+
+.smoke-2 {
+  top: 45%;
+  left: 50%;
+  animation-delay: 0.1s;
+  width: 180px;
+  height: 180px;
+}
+
+.smoke-3 {
+  top: 50%;
+  left: 35%;
+  animation-delay: 0.2s;
+}
+
+.smoke-4 {
+  top: 35%;
+  left: 45%;
+  animation-delay: 0.15s;
+  width: 120px;
+  height: 120px;
+}
+
+.smoke-5 {
+  top: 45%;
+  left: 40%;
+  animation-delay: 0.25s;
+  width: 200px;
+  height: 200px;
+}
+
+@keyframes smokeRise {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2) translateY(-100px);
+  }
 }
 
 /* Treasure Chest Design */
