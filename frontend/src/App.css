@@ -1,100 +1,230 @@
-.App {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+/* Import Google Fonts for medieval feel */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:wght@400;600;700&display=swap');
+
+/* D&D Color Palette Variables */
+:root {
+  --dragon-red: #8b0000;
+  --dragon-blood: #dc143c;
+  --mystic-purple: #4a148c;
+  --royal-purple: #6a1b9a;
+  --deep-gold: #ffd700;
+  --ancient-gold: #ffb300;
+  --dungeon-blue: #1a237e;
+  --magic-blue: #283593;
+  --parchment: #f5e6d3;
+  --dark-parchment: #e8d7c3;
+  --stone-gray: #4a4a4a;
+  --shadow-black: rgba(0, 0, 0, 0.8);
+  --emerald-green: #065535;
+  --forest-green: #0a7e3e;
 }
 
+.App {
+  min-height: 100vh;
+  background: #0a0a0a;
+  font-family: 'Crimson Text', serif;
+  position: relative;
+}
+
+/* Subtle stone texture overlay */
+.App::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300"><defs><pattern id="stone" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse"><rect fill="%23111" width="100" height="100"/><rect fill="%23222" x="10" y="10" width="30" height="30" opacity="0.3"/><rect fill="%23222" x="60" y="60" width="30" height="30" opacity="0.3"/></pattern></defs><rect width="300" height="300" fill="url(%23stone)"/></svg>');
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Medieval Header - Like a castle banner */
 .App-header {
-  background-color: rgba(0, 0, 0, 0.9);
-  padding: 20px;
+  background: rgba(0, 0, 0, 0.95);
+  border-bottom: 4px solid var(--ancient-gold);
+  padding: 25px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: white;
+  color: var(--parchment);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  position: relative;
+  z-index: 10;
+}
+
+.App-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    var(--deep-gold) 0%,
+    var(--ancient-gold) 25%,
+    var(--dragon-red) 50%,
+    var(--ancient-gold) 75%,
+    var(--deep-gold) 100%);
 }
 
 .App-header h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: 42px;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--deep-gold);
+  text-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(255, 215, 0, 0.5);
 }
 
 .player-info {
   display: flex;
-  gap: 20px;
+  gap: 15px;
   align-items: center;
   font-size: 16px;
-  color: white;
+  color: var(--parchment);
 }
 
+/* Player name badge - like a shield */
 .player-info > span:first-child {
-  background: rgba(255, 255, 255, 0.95);
-  color: #282c34;
-  padding: 8px 16px;
-  border-radius: 20px;
+  background: linear-gradient(135deg, var(--mystic-purple) 0%, var(--royal-purple) 100%);
+  color: var(--parchment);
+  padding: 10px 20px;
+  border-radius: 5px 20px 5px 20px;
   font-weight: bold;
   font-size: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  border: 2px solid #61dafb;
+  border: 2px solid var(--ancient-gold);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 215, 0, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.5);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
 }
 
 .coins {
   font-weight: bold;
-  color: #ffd700;
-}
-
-.register-button {
-  padding: 15px 30px;
+  color: var(--deep-gold);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
   font-size: 18px;
-  background: #4ecdc4;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s;
 }
 
-.register-button:hover {
-  background: #45b8b0;
-}
-
-.navigation {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 10px;
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-}
-
-.navigation button {
-  padding: 10px 20px;
-  background: transparent;
-  color: white;
-  border: 1px solid white;
-  border-radius: 5px;
+/* Voice selector - styled like a scroll dropdown */
+.voice-selector {
+  background: linear-gradient(180deg, var(--parchment) 0%, var(--dark-parchment) 100%);
+  color: var(--stone-gray);
+  border: 2px solid var(--ancient-gold);
+  padding: 8px 12px;
+  border-radius: 3px;
+  font-family: 'Crimson Text', serif;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
 }
 
+.voice-selector:hover {
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+/* Main button styles - leather texture */
+.register-button {
+  padding: 15px 40px;
+  font-size: 20px;
+  background: linear-gradient(135deg, var(--dragon-red) 0%, var(--dragon-blood) 100%);
+  color: var(--parchment);
+  border: 3px solid var(--ancient-gold);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.register-button:hover {
+  background: linear-gradient(135deg, var(--dragon-blood) 0%, #ff0000 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3),
+    0 6px 12px rgba(0, 0, 0, 0.7);
+}
+
+/* Navigation - Tavern style wooden bar */
+.navigation {
+  background: linear-gradient(180deg,
+    rgba(74, 32, 14, 0.95) 0%,
+    rgba(51, 21, 7, 0.95) 100%);
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.5);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.7);
+}
+
+.navigation button {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.9) 0%, rgba(101, 50, 14, 0.9) 100%);
+  color: var(--parchment);
+  border: 2px solid rgba(255, 183, 0, 0.6);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow:
+    inset 0 2px 4px rgba(255, 215, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
 .navigation button:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(160, 82, 45, 0.9) 0%, rgba(139, 69, 19, 0.9) 100%);
+  border-color: var(--deep-gold);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 2px 4px rgba(255, 215, 0, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.7);
 }
 
 .navigation button.active {
-  background: white;
-  color: #333;
+  background: linear-gradient(135deg, var(--deep-gold) 0%, var(--ancient-gold) 100%);
+  color: var(--stone-gray);
+  border-color: var(--deep-gold);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 0 15px rgba(255, 215, 0, 0.5);
 }
 
 .main-content {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 30px;
+  max-width: 1400px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .error {
-  background: #ff4444;
-  color: white;
-  padding: 10px;
-  margin: 10px 20px;
+  background: linear-gradient(135deg, var(--dragon-red) 0%, var(--dragon-blood) 100%);
+  color: var(--parchment);
+  padding: 15px;
+  margin: 15px 20px;
   border-radius: 5px;
+  border: 2px solid var(--ancient-gold);
+  font-weight: 600;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .loading {
@@ -102,124 +232,273 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  font-size: 24px;
-  color: white;
+  font-size: 32px;
+  color: var(--deep-gold);
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
 }
 
+/* Home - Tavern interior */
 .home {
   text-align: center;
-  color: white;
-  padding: 40px;
-  background: rgba(0, 0, 0, 0.3);
+  color: var(--parchment);
+  padding: 50px;
+  background: rgba(20, 20, 20, 0.95);
   border-radius: 10px;
+  border: 3px solid var(--ancient-gold);
+  box-shadow:
+    inset 0 0 50px rgba(139, 69, 19, 0.2),
+    0 10px 30px rgba(0, 0, 0, 0.7);
+  position: relative;
+}
+
+.home::before {
+  content: '⚔️';
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 40px;
+  opacity: 0.8;
+  filter: drop-shadow(2px 2px 4px rgba(255, 255, 255, 0.4))
+          drop-shadow(-1px -1px 2px rgba(255, 215, 0, 0.5));
+}
+
+.home::after {
+  content: '🛡️';
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 40px;
+  opacity: 0.8;
+  filter: drop-shadow(2px 2px 4px rgba(255, 255, 255, 0.4))
+          drop-shadow(-1px -1px 2px rgba(255, 215, 0, 0.5));
 }
 
 .home h2 {
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  font-family: 'Cinzel', serif;
+  font-size: 36px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--deep-gold);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.home p {
+  font-size: 20px;
+  margin-bottom: 30px;
+  color: var(--parchment);
 }
 
 .quick-actions {
   display: flex;
   gap: 20px;
   justify-content: center;
-  margin-top: 30px;
+  margin-top: 40px;
+  flex-wrap: wrap;
 }
 
 .quick-actions button {
-  padding: 15px 25px;
-  background: #4ecdc4;
-  color: white;
-  border: none;
+  padding: 18px 35px;
+  background: linear-gradient(135deg, var(--emerald-green) 0%, var(--forest-green) 100%);
+  color: var(--parchment);
+  border: 2px solid var(--ancient-gold);
   border-radius: 5px;
   font-size: 16px;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .quick-actions button:hover {
-  background: #45b8b0;
+  background: linear-gradient(135deg, var(--forest-green) 0%, #0fa050 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3),
+    0 6px 12px rgba(0, 0, 0, 0.7),
+    0 0 20px rgba(10, 126, 62, 0.5);
 }
 
+/* Collection section */
 .collection {
-  color: white;
+  color: var(--parchment);
 }
 
 .collection h2 {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  font-family: 'Cinzel', serif;
+  font-size: 36px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--deep-gold);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
+  padding: 25px;
+  background: rgba(20, 20, 20, 0.7);
+  border-radius: 10px;
+  border: 2px solid rgba(255, 183, 0, 0.3);
 }
 
+/* Shop - Merchant's stall */
 .shop {
-  color: white;
+  color: var(--parchment);
   text-align: center;
 }
 
 .shop h2 {
-  margin-bottom: 30px;
+  margin-bottom: 40px;
+  font-family: 'Cinzel', serif;
+  font-size: 36px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--deep-gold);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .packs {
   display: flex;
-  gap: 30px;
+  gap: 40px;
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .pack {
-  background: rgba(0, 0, 0, 0.5);
-  padding: 30px;
+  background: linear-gradient(135deg,
+    rgba(74, 20, 140, 0.9) 0%,
+    rgba(40, 53, 147, 0.9) 100%);
+  padding: 35px;
   border-radius: 10px;
-  width: 250px;
+  width: 280px;
+  border: 3px solid var(--ancient-gold);
+  box-shadow:
+    inset 0 0 30px rgba(255, 215, 0, 0.1),
+    0 8px 20px rgba(0, 0, 0, 0.7);
+  transition: transform 0.3s;
+}
+
+.pack:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    inset 0 0 40px rgba(255, 215, 0, 0.2),
+    0 12px 30px rgba(0, 0, 0, 0.8);
 }
 
 .pack h3 {
-  margin-bottom: 15px;
-  color: #4ecdc4;
+  margin-bottom: 20px;
+  color: var(--deep-gold);
+  font-family: 'Cinzel', serif;
+  font-size: 24px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.pack p {
+  color: var(--parchment);
+  font-size: 18px;
+  margin: 10px 0;
 }
 
 .pack .price {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
-  color: #ffd700;
-  margin: 15px 0;
+  color: var(--deep-gold);
+  margin: 20px 0;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+  font-family: 'Cinzel', serif;
 }
 
 .pack button {
   width: 100%;
-  padding: 12px;
-  background: #4ecdc4;
-  color: white;
-  border: none;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--emerald-green) 0%, var(--forest-green) 100%);
+  color: var(--parchment);
+  border: 2px solid var(--ancient-gold);
   border-radius: 5px;
-  font-size: 16px;
+  font-size: 18px;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: all 0.3s;
+  font-family: 'Cinzel', serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .pack button:hover:not(:disabled) {
-  background: #45b8b0;
+  background: linear-gradient(135deg, var(--forest-green) 0%, #0fa050 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3),
+    0 6px 12px rgba(0, 0, 0, 0.7);
 }
 
 .pack button:disabled {
-  background: #666;
+  background: linear-gradient(135deg, var(--stone-gray) 0%, #333 100%);
   cursor: not-allowed;
+  opacity: 0.7;
+  border-color: #666;
 }
 
+/* Battle Arena */
 .battle {
   text-align: center;
-  color: white;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 40px;
+  color: var(--parchment);
+  background: rgba(20, 20, 20, 0.95);
+  padding: 50px;
   border-radius: 10px;
+  border: 3px solid var(--ancient-gold);
+  box-shadow:
+    inset 0 0 50px rgba(139, 0, 0, 0.2),
+    0 10px 30px rgba(0, 0, 0, 0.7);
 }
 
 .battle h2 {
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  font-family: 'Cinzel', serif;
+  font-size: 36px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: var(--deep-gold);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .App-header h1 {
+    font-size: 28px;
+  }
+
+  .navigation {
+    flex-wrap: wrap;
+  }
+
+  .navigation button {
+    font-size: 12px;
+    padding: 10px 16px;
+  }
+
+  .cards-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .quick-actions {
+    flex-direction: column;
+  }
 }

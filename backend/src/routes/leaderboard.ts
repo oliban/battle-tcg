@@ -18,8 +18,8 @@ router.get('/', (req: Request, res: Response) => {
     pvpLosses: player.pvpLosses || 0,
     totalWins: player.wins,
     totalLosses: player.losses,
-    winRate: player.pvpWins && player.pvpLosses
-      ? Math.round((player.pvpWins / (player.pvpWins + player.pvpLosses)) * 100)
+    winRate: (player.pvpWins || player.pvpLosses)
+      ? Math.round(((player.pvpWins || 0) / ((player.pvpWins || 0) + (player.pvpLosses || 0))) * 100)
       : 0,
     lastActive: player.lastActive
   }));

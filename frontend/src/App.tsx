@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import './components/PlayerName.css';
 import { Player, Card } from './types';
 import { playerAPI, shopAPI } from './services/api';
 import CardCreator from './components/CardCreator';
@@ -194,7 +195,7 @@ function App() {
       <header className="App-header">
         <h1>Battle Card Game</h1>
         <div className="player-info">
-          <span>{player.name}</span>
+          <span className="player-name-display medium">{player.name}</span>
           <span className="coins">💰 {player.coins} coins</span>
           <span>W: {player.wins} | L: {player.losses}</span>
 
@@ -290,7 +291,7 @@ function App() {
       <main className="main-content">
         {currentView === 'home' && (
           <div className="home">
-            <h2>Welcome, {player.name}!</h2>
+            <h2>Welcome, <span className="player-name-display large epic">{player.name}</span>!</h2>
             <p>You have {player.coins} coins and {playerCards.length} cards.</p>
             <div className="quick-actions">
               <button onClick={() => setCurrentView('creator')}>Create a Card (50 coins)</button>

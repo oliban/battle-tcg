@@ -1,60 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:wght@400;600;700&display=swap');
+
+/* Main container - matching Battle Arena style */
 .leaderboard-container {
-  padding: 20px;
-  max-width: 1200px;
+  padding: 30px;
+  max-width: 1400px;
   margin: 0 auto;
+  background: rgba(15, 15, 15, 0.95);
+  border-radius: 15px;
+  border: 3px solid #ffb300;
+  box-shadow:
+    inset 0 0 50px rgba(255, 215, 0, 0.1),
+    0 15px 40px rgba(0, 0, 0, 0.8);
+  position: relative;
 }
 
+/* Header - Epic tournament banner */
 .leaderboard-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 35px;
+  padding: 25px;
+  background: rgba(20, 20, 20, 0.95);
+  border: 2px solid #ffd700;
+  border-radius: 10px;
+  position: relative;
+}
+
+.leaderboard-header::before {
+  content: '🏆';
+  position: absolute;
+  left: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 40px;
+  opacity: 0.6;
+}
+
+.leaderboard-header::after {
+  content: '👑';
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 40px;
+  opacity: 0.6;
 }
 
 .leaderboard-header h1 {
   margin: 0;
-  font-size: 36px;
-  color: #1f2937;
+  font-size: 42px;
+  color: #ffd700;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.8),
+    0 0 25px rgba(255, 215, 0, 0.5);
 }
 
 .subtitle {
-  color: #6b7280;
-  margin: 8px 0 0 0;
-  font-size: 16px;
+  color: #f5e6d3;
+  margin: 10px 0 0 0;
+  font-size: 18px;
+  font-family: 'Crimson Text', serif;
+  font-style: italic;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
 }
 
+/* Player rank card - Your position badge */
 .player-rank-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 20px;
+  background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 100%);
+  color: #f5e6d3;
+  padding: 25px;
   border-radius: 12px;
-  margin-bottom: 30px;
+  margin-bottom: 35px;
+  border: 3px solid #ffd700;
+  box-shadow:
+    inset 0 0 30px rgba(255, 215, 0, 0.1),
+    0 6px 20px rgba(0, 0, 0, 0.6);
 }
 
 .rank-info {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 25px;
 }
 
 .your-rank {
-  font-size: 16px;
-  opacity: 0.9;
+  font-size: 18px;
+  color: #ffb300;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .rank-number {
-  font-size: 24px;
+  font-size: 36px;
   font-weight: bold;
+  color: #ffd700;
+  font-family: 'Cinzel', serif;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .rank-details {
   margin-left: auto;
-  font-size: 14px;
+  font-size: 16px;
+  color: #f5e6d3;
+  font-family: 'Crimson Text', serif;
 }
 
+/* Leaderboard table - Parchment style */
 .leaderboard-table {
-  background: white;
+  background: rgba(245, 230, 211, 0.95);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 3px solid #b8860b;
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.5),
+    inset 0 0 20px rgba(139, 69, 19, 0.1);
 }
 
 .table-header,
@@ -62,107 +124,148 @@
   display: grid;
   grid-template-columns: 80px 1fr 100px 80px 80px 120px 120px;
   align-items: center;
-  padding: 12px 20px;
+  padding: 15px 20px;
 }
 
 .table-header {
-  background: #f9fafb;
+  background: linear-gradient(135deg, rgba(74, 20, 140, 0.9) 0%, rgba(139, 0, 0, 0.9) 100%);
   font-weight: 600;
-  color: #6b7280;
+  color: #ffd700;
   font-size: 14px;
-  border-bottom: 2px solid #e5e7eb;
+  border-bottom: 3px solid #ffb300;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .table-row {
-  border-bottom: 1px solid #f3f4f6;
-  transition: background 0.2s;
+  border-bottom: 2px solid rgba(139, 69, 19, 0.2);
+  transition: all 0.3s;
+  color: #2c1810;
 }
 
 .table-row:hover {
-  background: #f9fafb;
+  background: rgba(255, 240, 220, 0.95);
+  transform: translateX(5px);
+  box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.2);
 }
 
 .table-row.current-player {
-  background: #eff6ff;
-  border: 2px solid #3b82f6;
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.3) 0%, rgba(255, 183, 0, 0.2) 100%);
+  border: 2px solid #ffd700;
   margin: -1px;
+  box-shadow:
+    inset 0 0 20px rgba(255, 215, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .table-row.top-three {
-  background: linear-gradient(90deg, #fef3c7 0%, transparent 100%);
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.2) 0%, transparent 100%);
+  position: relative;
 }
 
+/* Rank column */
 .col-rank {
   text-align: center;
 }
 
 .rank-badge {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: bold;
+  font-family: 'Cinzel', serif;
 }
 
+/* Medal colors for top 3 */
+.table-row:nth-child(1) .rank-badge { color: #ffd700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.6); }
+.table-row:nth-child(2) .rank-badge { color: #c0c0c0; text-shadow: 0 0 8px rgba(192, 192, 192, 0.6); }
+.table-row:nth-child(3) .rank-badge { color: #cd7f32; text-shadow: 0 0 6px rgba(205, 127, 50, 0.6); }
+
+/* Player column */
 .col-player {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .player-name {
   font-weight: 600;
-  color: #1f2937;
+  color: #4a148c;
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  letter-spacing: 0.5px;
 }
 
 .you-badge {
-  background: #3b82f6;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10px;
+  background: linear-gradient(135deg, #ffd700, #ffb300);
+  color: #2c1810;
+  padding: 3px 10px;
+  border-radius: 15px;
+  font-size: 11px;
   font-weight: bold;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+/* Rating column */
 .col-rating {
   text-align: center;
 }
 
 .rating {
   font-weight: bold;
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  display: inline-block;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .rating-master {
   background: linear-gradient(135deg, #ffd700, #ffed4e);
-  color: #7c2d12;
+  color: #2c1810;
+  border: 2px solid #ffb300;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
 }
 
 .rating-expert {
-  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  background: linear-gradient(135deg, #8e44ad, #9b59b6);
   color: white;
+  border: 2px solid #bb8fce;
+  box-shadow: 0 0 12px rgba(155, 89, 182, 0.5);
 }
 
 .rating-advanced {
-  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  background: linear-gradient(135deg, #1a237e, #283593);
   color: white;
+  border: 2px solid #5c6bc0;
 }
 
 .rating-intermediate {
-  background: linear-gradient(135deg, #10b981, #34d399);
+  background: linear-gradient(135deg, #065535, #0a7e3e);
   color: white;
+  border: 2px solid #10b981;
 }
 
 .rating-beginner {
-  background: #e5e7eb;
-  color: #4b5563;
+  background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+  color: white;
+  border: 2px solid #bdc3c7;
 }
 
+/* Win/Loss columns */
 .col-wins {
   text-align: center;
 }
 
 .wins {
-  color: #10b981;
-  font-weight: 600;
+  color: #065535;
+  font-weight: 700;
+  font-size: 18px;
+  font-family: 'Cinzel', serif;
+  text-shadow: 0 0 3px rgba(10, 126, 62, 0.3);
 }
 
 .col-losses {
@@ -170,10 +273,14 @@
 }
 
 .losses {
-  color: #ef4444;
-  font-weight: 600;
+  color: #8b0000;
+  font-weight: 700;
+  font-size: 18px;
+  font-family: 'Cinzel', serif;
+  text-shadow: 0 0 3px rgba(220, 20, 60, 0.3);
 }
 
+/* Winrate column */
 .col-winrate {
   display: flex;
   align-items: center;
@@ -182,10 +289,12 @@
 .winrate-bar {
   position: relative;
   width: 100%;
-  height: 24px;
-  background: #f3f4f6;
-  border-radius: 12px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 2px solid #b8860b;
+  border-radius: 14px;
   overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .winrate-fill {
@@ -193,8 +302,9 @@
   left: 0;
   top: 0;
   height: 100%;
-  background: linear-gradient(90deg, #34d399, #10b981);
-  transition: width 0.3s;
+  background: linear-gradient(90deg, #065535, #0a7e3e, #10b981);
+  transition: width 0.5s ease;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .winrate-text {
@@ -202,60 +312,90 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  font-size: 12px;
-  font-weight: 600;
-  color: #1f2937;
+  font-size: 13px;
+  font-weight: 700;
+  color: #f5e6d3;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  font-family: 'Cinzel', serif;
 }
 
+/* Active column */
 .col-active {
   text-align: center;
 }
 
 .last-active {
-  color: #6b7280;
+  color: #5d4037;
   font-size: 14px;
+  font-family: 'Crimson Text', serif;
+  font-style: italic;
 }
 
+/* Loading and error states */
 .loading,
 .error-message {
   text-align: center;
-  padding: 40px;
+  padding: 50px;
+  color: #f5e6d3;
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
 }
 
 .error-message {
-  color: #ef4444;
+  color: #dc143c;
+  text-shadow: 0 0 10px rgba(220, 20, 60, 0.5);
 }
 
+/* Footer - Rating legend */
 .leaderboard-footer {
   margin-top: 40px;
-  padding: 20px;
-  background: #f9fafb;
+  padding: 25px;
+  background: rgba(20, 20, 20, 0.95);
   border-radius: 12px;
+  border: 2px solid #b8860b;
+  box-shadow: inset 0 0 20px rgba(139, 69, 19, 0.2);
 }
 
 .rating-legend h3 {
   margin-top: 0;
-  margin-bottom: 15px;
-  color: #374151;
-  font-size: 16px;
+  margin-bottom: 20px;
+  color: #ffd700;
+  font-size: 20px;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 .tier-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
 }
 
 .tier {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  padding: 10px;
+  background: rgba(245, 230, 211, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 183, 0, 0.3);
 }
 
 .tier-badge {
+  font-size: 20px;
+}
+
+.tier span {
+  color: #f5e6d3;
+  font-family: 'Crimson Text', serif;
   font-size: 16px;
 }
 
+/* Responsive design */
 @media (max-width: 768px) {
   .table-header,
   .table-row {
@@ -268,8 +408,17 @@
     display: none;
   }
 
+  .leaderboard-header h1 {
+    font-size: 28px;
+  }
+
+  .leaderboard-header::before,
+  .leaderboard-header::after {
+    font-size: 24px;
+  }
+
   .player-rank-card {
-    padding: 15px;
+    padding: 20px;
   }
 
   .rank-info {
@@ -279,7 +428,7 @@
   .rank-details {
     margin-left: 0;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 15px;
   }
 
   .tier-list {

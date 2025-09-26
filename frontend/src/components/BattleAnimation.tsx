@@ -3,6 +3,7 @@ import { Battle as BattleType, Card, BattleRound } from '../types';
 import DiceRoll from './DiceRoll';
 import voiceService from '../services/voice';
 import './BattleAnimation.css';
+import './PlayerName.css';
 
 interface BattleAnimationProps {
   battle: BattleType;
@@ -327,7 +328,7 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
       {/* Score Display */}
       <div className="battle-score-display">
         <div className="player-score">
-          <span className="player-name">{battle.player1Name}</span>
+          <span className="player-name-display medium epic">{battle.player1Name}</span>
           <span className="score">{player1Score}</span>
           {player1Damage > 0 && (
             <div style={{
@@ -345,7 +346,7 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
           {currentRoundIndex >= 0 ? `Round ${currentRoundIndex + 1} / 3` : 'Battle Starting'}
         </div>
         <div className="player-score">
-          <span className="player-name">{battle.player2Name || 'AI Opponent'}</span>
+          <span className={`player-name-display medium epic ${!battle.player2Name ? 'ai-opponent' : ''}`}>{battle.player2Name || 'AI Opponent'}</span>
           <span className="score">{player2Score}</span>
           {player2Damage > 0 && (
             <div style={{
@@ -374,11 +375,11 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
             alignItems: 'center',
             height: '100%'
           }}>
-            <h1 style={{ fontSize: '64px', marginBottom: '20px' }}>
+            <h1 className="player-name-display large epic" style={{ fontSize: '64px', marginBottom: '20px' }}>
               {battle.player1Name}
             </h1>
             <h2 style={{ fontSize: '48px', margin: '20px 0', color: '#f1c40f' }}>VS</h2>
-            <h1 style={{ fontSize: '64px', marginTop: '20px' }}>
+            <h1 className={`player-name-display large epic ${!battle.player2Name ? 'ai-opponent' : ''}`} style={{ fontSize: '64px', marginTop: '20px' }}>
               {battle.player2Name || 'AI Opponent'}
             </h1>
           </div>
@@ -407,7 +408,7 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
               color: battle.winner === battle.player1Id ? '#2ecc71' : '#e74c3c',
               textShadow: '4px 4px 8px rgba(0,0,0,0.5)'
             }}>
-              {battle.winner === battle.player1Id ? battle.player1Name : (battle.player2Name || 'AI Opponent')} WINS!
+              <span className="player-name-display large epic">{battle.winner === battle.player1Id ? battle.player1Name : (battle.player2Name || 'AI Opponent')}</span> WINS!
             </h1>
             <h2 style={{
               fontSize: '56px',
@@ -419,11 +420,11 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
             {(player1Damage > 0 || player2Damage > 0) && (
               <div style={{ fontSize: '28px', marginTop: '30px', display: 'flex', gap: '40px', justifyContent: 'center' }}>
                 <div style={{ color: battle.winner === battle.player1Id ? '#2ecc71' : '#e74c3c' }}>
-                  <strong>{battle.player1Name}</strong>
+                  <strong className="player-name-display medium">{battle.player1Name}</strong>
                   <div style={{ color: '#ff6b6b' }}>💥 {player1Damage} damage</div>
                 </div>
                 <div style={{ color: battle.winner === battle.player1Id ? '#e74c3c' : '#2ecc71' }}>
-                  <strong>{battle.player2Name || 'AI Opponent'}</strong>
+                  <strong className={`player-name-display medium ${!battle.player2Name ? 'ai-opponent' : ''}`}>{battle.player2Name || 'AI Opponent'}</strong>
                   <div style={{ color: '#ff6b6b' }}>💥 {player2Damage} damage</div>
                 </div>
               </div>
@@ -663,8 +664,8 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
             </div>
             <h2 style={{ fontSize: '3em', color: '#ffeb3b' }}>
               {battle.winner === battle.player1Id ?
-                `${battle.player1Name} WINS BY DAMAGE!` :
-                `${battle.player2Name || 'AI Opponent'} WINS BY DAMAGE!`}
+                <><span className="player-name-display large epic">{battle.player1Name}</span> WINS BY DAMAGE!</> :
+                <><span className={`player-name-display large epic ${!battle.player2Name ? 'ai-opponent' : ''}`}>{battle.player2Name || 'AI Opponent'}</span> WINS BY DAMAGE!</>}
             </h2>
           </div>
         )}
@@ -679,8 +680,8 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
             </div>
             <h2>
               {battle.winner === battle.player1Id ?
-                `${battle.player1Name} WINS!` :
-                `${battle.player2Name || 'AI Opponent'} WINS!`}
+                <><span className="player-name-display large epic">{battle.player1Name}</span> WINS!</> :
+                <><span className={`player-name-display large epic ${!battle.player2Name ? 'ai-opponent' : ''}`}>{battle.player2Name || 'AI Opponent'}</span> WINS!</>}
             </h2>
             {/* Announce winner */}
             {(() => {

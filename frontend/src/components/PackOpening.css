@@ -1,18 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:wght@400;600;700&display=swap');
+
+/* Treasure Chamber Container */
 .pack-opening-container {
   min-height: 80vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
-  color: white;
+  padding: 30px;
+  color: #f5e6d3;
+  background: rgba(15, 15, 15, 0.95);
+  border-radius: 15px;
+  margin: 20px;
+  border: 3px solid #ffb300;
+  box-shadow:
+    inset 0 0 50px rgba(255, 215, 0, 0.1),
+    0 10px 30px rgba(0, 0, 0, 0.7);
+  position: relative;
+}
+
+.pack-opening-container::before {
+  content: '💎';
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  font-size: 40px;
+  opacity: 0.2;
+  animation: glimmer 3s infinite;
+}
+
+.pack-opening-container::after {
+  content: '💎';
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  font-size: 40px;
+  opacity: 0.2;
+  animation: glimmer 3s infinite 1.5s;
+}
+
+@keyframes glimmer {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.6; }
 }
 
 .pack-opening-container h2 {
-  font-size: 32px;
-  margin-bottom: 30px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-size: 42px;
+  margin-bottom: 35px;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #ffd700;
+  text-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.8),
+    0 0 25px rgba(255, 215, 0, 0.5);
 }
 
+/* Treasure Chest Wrapper */
 .pack-wrapper {
   display: flex;
   flex-direction: column;
@@ -20,43 +63,52 @@
   margin-top: 50px;
 }
 
+/* Treasure Chest Design */
 .pack {
-  width: 200px;
-  height: 280px;
+  width: 250px;
+  height: 320px;
   position: relative;
   transform-style: preserve-3d;
   transition: transform 0.6s;
   cursor: pointer;
-  animation: float 2s ease-in-out infinite;
+  animation: mysticalFloat 3s ease-in-out infinite;
 }
 
-@keyframes float {
+@keyframes mysticalFloat {
   0%, 100% {
     transform: translateY(0) rotateY(0);
+    filter: brightness(1);
   }
   50% {
-    transform: translateY(-10px) rotateY(5deg);
+    transform: translateY(-15px) rotateY(8deg);
+    filter: brightness(1.2);
   }
 }
 
 .pack:hover {
-  transform: scale(1.05) rotateY(10deg);
+  transform: scale(1.08) rotateY(15deg);
+  filter: brightness(1.3) drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
 }
 
 .pack.opening {
-  animation: packOpen 1s ease-out forwards;
+  animation: treasureOpen 1.5s ease-out forwards;
 }
 
-@keyframes packOpen {
+@keyframes treasureOpen {
   0% {
     transform: scale(1) rotateY(0);
   }
-  50% {
-    transform: scale(1.3) rotateY(180deg);
+  30% {
+    transform: scale(1.2) rotateY(90deg);
+  }
+  60% {
+    transform: scale(1.4) rotateY(180deg);
+    filter: brightness(2) drop-shadow(0 0 50px rgba(255, 215, 0, 1));
   }
   100% {
-    transform: scale(0) rotateY(360deg);
+    transform: scale(0) rotateY(720deg);
     opacity: 0;
+    filter: brightness(3) drop-shadow(0 0 100px rgba(255, 215, 0, 1));
   }
 }
 
@@ -66,92 +118,125 @@
   height: 100%;
   position: absolute;
   backface-visibility: hidden;
-  border-radius: 10px;
+  border-radius: 15px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+/* Treasure Chest Front - Ornate wooden chest */
 .pack-front {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: 3px solid gold;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  background:
+    linear-gradient(135deg,
+      rgba(139, 69, 19, 0.95) 0%,
+      rgba(101, 50, 14, 0.95) 100%),
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="wood" x="0" y="0" width="50" height="100" patternUnits="userSpaceOnUse"><rect fill="%23654321" width="50" height="100"/><rect fill="%23543210" x="0" y="0" width="25" height="100" opacity="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23wood)"/></svg>');
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #ffd700, #ffb300, #ffd700) 1;
+  box-shadow:
+    inset 0 0 30px rgba(0, 0, 0, 0.5),
+    0 15px 40px rgba(0, 0, 0, 0.6);
 }
 
 .pack-back {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 100%);
   transform: rotateY(180deg);
+  border: 4px solid #ffd700;
 }
 
 .pack-design {
   text-align: center;
-  color: white;
+  color: #ffd700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .pack-design h3 {
-  font-size: 24px;
+  font-size: 26px;
   margin-bottom: 20px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow:
+    2px 2px 4px rgba(0, 0, 0, 0.8),
+    0 0 15px rgba(255, 215, 0, 0.5);
 }
 
 .pack-icon {
-  font-size: 48px;
-  margin: 20px 0;
+  font-size: 64px;
+  margin: 25px 0;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
+  animation: sparkle 2s infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.1) rotate(5deg); }
 }
 
 .pack-design p {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: bold;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 1px;
 }
 
+/* Magical shine effect */
 .pack-shine {
   width: 100%;
   height: 100%;
   background: linear-gradient(
     105deg,
     transparent 40%,
-    rgba(255, 255, 255, 0.7) 45%,
+    rgba(255, 215, 0, 0.8) 45%,
     transparent 50%
   );
-  animation: shine 3s infinite;
+  animation: magicalShine 4s infinite;
+  border-radius: 15px;
 }
 
-@keyframes shine {
+@keyframes magicalShine {
   0% {
-    transform: translateX(-100%);
+    transform: translateX(-120%);
   }
   100% {
-    transform: translateX(100%);
+    transform: translateX(120%);
   }
 }
 
 .instruction {
-  margin-top: 20px;
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.8);
+  margin-top: 25px;
+  font-size: 20px;
+  color: #ffd700;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
   animation: pulse 2s infinite;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
 @keyframes pulse {
   0%, 100% {
-    opacity: 0.8;
+    opacity: 0.7;
+    transform: scale(1);
   }
   50% {
     opacity: 1;
+    transform: scale(1.05);
   }
 }
 
+/* Cards Reveal Container */
 .cards-reveal-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1300px;
 }
 
 .cards-grid-opening {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 25px;
   justify-items: center;
-  margin: 30px 0;
+  margin: 35px 0;
 }
 
 .card-wrapper {
@@ -162,125 +247,189 @@
 }
 
 .card-wrapper.revealed {
-  animation: cardFlip 0.6s ease-out;
+  animation: cardMagicalFlip 0.8s ease-out;
 }
 
-@keyframes cardFlip {
+@keyframes cardMagicalFlip {
   0% {
-    transform: rotateY(0);
+    transform: rotateY(0) scale(1);
+  }
+  50% {
+    transform: rotateY(180deg) scale(1.2);
+    filter: brightness(1.5) drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
   }
   100% {
-    transform: rotateY(360deg);
+    transform: rotateY(360deg) scale(1);
   }
 }
 
+/* Mystery Card Back */
 .card-back {
-  width: 200px;
-  height: 280px;
-  background: linear-gradient(135deg, #1e3c72, #2a5298);
-  border: 3px solid #silver;
-  border-radius: 10px;
+  width: 220px;
+  height: 310px;
+  background:
+    linear-gradient(135deg,
+      rgba(74, 20, 140, 0.95) 0%,
+      rgba(40, 53, 147, 0.95) 100%);
+  border: 4px solid;
+  border-image: linear-gradient(135deg, #8b6508, #ffd700, #b8860b) 1;
+  border-radius: 12px;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.5),
+    inset 0 0 25px rgba(255, 215, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-back::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+  animation: rotateGlow 10s linear infinite;
+}
+
+@keyframes rotateGlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .card-back-design {
   text-align: center;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 215, 0, 0.5);
+  z-index: 1;
 }
 
 .card-back-pattern {
-  font-size: 72px;
+  font-size: 80px;
   font-weight: bold;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow:
+    3px 3px 6px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(255, 215, 0, 0.3);
 }
 
 .card-reveal-animation {
-  animation: revealGlow 0.8s ease-out;
+  animation: revealBurst 1s ease-out;
 }
 
-@keyframes revealGlow {
+@keyframes revealBurst {
   0% {
-    transform: scale(0.8);
+    transform: scale(0.6) rotateZ(0deg);
     opacity: 0;
+    filter: brightness(2);
   }
   50% {
-    transform: scale(1.1);
+    transform: scale(1.2) rotateZ(5deg);
+    filter: brightness(1.5) drop-shadow(0 0 40px rgba(255, 215, 0, 0.8));
   }
   100% {
-    transform: scale(1);
+    transform: scale(1) rotateZ(0deg);
     opacity: 1;
+    filter: brightness(1);
   }
 }
 
+/* Rare card glow - Purple mystic aura */
 .rare-glow {
-  animation: rareGlowPulse 2s infinite;
+  animation: rareAura 2s infinite;
 }
 
-@keyframes rareGlowPulse {
+@keyframes rareAura {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+    box-shadow:
+      0 0 30px rgba(155, 89, 182, 0.8),
+      0 0 60px rgba(142, 68, 173, 0.4);
   }
   50% {
-    box-shadow: 0 0 40px rgba(255, 107, 107, 1);
+    box-shadow:
+      0 0 40px rgba(155, 89, 182, 1),
+      0 0 80px rgba(142, 68, 173, 0.6),
+      0 0 120px rgba(155, 89, 182, 0.3);
   }
 }
 
+/* Uncommon card glow - Green nature magic */
 .uncommon-glow {
-  animation: uncommonGlowPulse 2s infinite;
+  animation: uncommonAura 2s infinite;
 }
 
-@keyframes uncommonGlowPulse {
+@keyframes uncommonAura {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(78, 205, 196, 0.8);
+    box-shadow:
+      0 0 25px rgba(46, 204, 113, 0.8),
+      0 0 50px rgba(39, 174, 96, 0.4);
   }
   50% {
-    box-shadow: 0 0 40px rgba(78, 205, 196, 1);
+    box-shadow:
+      0 0 35px rgba(46, 204, 113, 1),
+      0 0 70px rgba(39, 174, 96, 0.6);
   }
 }
 
+/* Common card glow - Silver shimmer */
 .common-glow {
-  box-shadow: 0 0 10px rgba(149, 165, 166, 0.5);
+  box-shadow:
+    0 0 15px rgba(189, 195, 199, 0.6),
+    0 0 30px rgba(149, 165, 166, 0.3);
 }
 
 .opening-status {
   text-align: center;
-  margin-top: 30px;
-  font-size: 18px;
+  margin-top: 35px;
+  font-size: 22px;
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #ffd700;
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
 }
 
 .opening-complete {
-  animation: fadeIn 0.5s ease-out;
+  animation: victoryFadeIn 0.8s ease-out;
 }
 
-@keyframes fadeIn {
+@keyframes victoryFadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(20px) scale(0.9);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
+/* Continue button - Emerald gate */
 .continue-button {
-  margin-top: 20px;
-  padding: 15px 30px;
-  background: linear-gradient(135deg, #52c41a, #389e0d);
-  color: white;
-  border: none;
+  margin-top: 25px;
+  padding: 18px 40px;
+  background: linear-gradient(135deg, #065535 0%, #0a7e3e 100%);
+  color: #f5e6d3;
+  border: 3px solid #ffd700;
   border-radius: 5px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 4px 15px rgba(82, 196, 26, 0.4);
+  font-family: 'Cinzel', serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3),
+    0 6px 20px rgba(0, 0, 0, 0.5);
 }
 
 .continue-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(82, 196, 26, 0.6);
+  background: linear-gradient(135deg, #0a7e3e 0%, #0fa050 100%);
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.3),
+    0 8px 25px rgba(0, 0, 0, 0.6),
+    0 0 30px rgba(10, 126, 62, 0.5);
 }

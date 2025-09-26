@@ -7,16 +7,16 @@ class DbStore {
     {
       id: 'basic-pack',
       name: 'Basic Pack',
-      description: '5 random cards from the community pool',
+      description: '4 random cards from the community pool',
       price: 100,
-      cardCount: 5
+      cardCount: 4
     },
     {
       id: 'premium-pack',
       name: 'Premium Pack',
-      description: '5 cards with guaranteed uncommon or better',
+      description: '4 cards with guaranteed uncommon or better',
       price: 250,
-      cardCount: 5,
+      cardCount: 4,
       guaranteedRarity: 'uncommon'
     }
   ];

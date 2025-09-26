@@ -4,6 +4,7 @@ import { Player, Card, Challenge as ChallengeType, Battle } from '../types';
 import CardComponent from './Card';
 import BattleAnimation from './BattleAnimation';
 import './Challenge.css';
+import './PlayerName.css';
 
 interface ChallengeProps {
   player: Player;
@@ -368,17 +369,6 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
               Challenge AI Opponent
             </button>
             </div>
-            <div className="challenge-toggle">
-              <label className="toggle-switch">
-                <span className="toggle-label">Show results</span>
-                <input
-                  type="checkbox"
-                  checked={showResults}
-                  onChange={(e) => setShowResults(e.target.checked)}
-                />
-                <span className="toggle-slider"></span>
-              </label>
-            </div>
           </div>
         </div>
 
@@ -393,7 +383,7 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
             <h3>📨 Incoming Challenges</h3>
             {pendingChallenges.map(challenge => (
               <div key={challenge.id} className="challenge-item incoming">
-                <span className="challenger-name">{challenge.challengerName}</span>
+                <span className="player-name-display medium">{challenge.challengerName}</span>
                 <span className="challenge-status">wants to battle!</span>
                 <button
                   className="btn btn-sm btn-accept"
@@ -411,7 +401,7 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
             <h3>⚔️ Ready to Battle</h3>
             {acceptedChallenges.map(challenge => (
               <div key={challenge.id} className="challenge-item accepted">
-                <span className="challenger-name">{challenge.challengerName}</span>
+                <span className="player-name-display medium">{challenge.challengerName}</span>
                 <span className="challenge-status">waiting for your cards</span>
                 <button
                   className="btn btn-sm btn-primary"
@@ -429,7 +419,7 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
             <h3>📤 Sent Challenges</h3>
             {sentChallenges.map(challenge => (
               <div key={challenge.id} className="challenge-item sent">
-                <span className="challenger-name">{challenge.challengedName}</span>
+                <span className="player-name-display medium">{challenge.challengedName}</span>
                 <span className="challenge-status">
                   {challenge.status === 'pending' ? 'waiting for response' : 'accepted - awaiting battle'}
                 </span>
@@ -440,7 +430,20 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
         {completedChallenges.length > 0 && (
           <div className="challenge-section">
-            <h3>🏆 Completed Battles</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <h3 style={{ marginBottom: '0' }}>🏆 Completed Battles</h3>
+              <div className="challenge-toggle">
+                <label className="toggle-switch">
+                  <span className="toggle-label">Show results</span>
+                  <input
+                    type="checkbox"
+                    checked={showResults}
+                    onChange={(e) => setShowResults(e.target.checked)}
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
             {completedChallenges.slice(0, 10).map(challenge => {
               const battle = battleResults.get(challenge.id);
               const isWinner = battle && battle.winner === player.id;
@@ -449,9 +452,11 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
                 <div key={challenge.id} className="challenge-item completed">
                   <span className="challenge-date">{formatDate(challenge.createdAt)}</span>
                   <span className="challenger-name">
-                    {challenge.challengerId === player.id
-                      ? `vs ${challenge.challengedName}`
-                      : `vs ${challenge.challengerName}`}
+                    vs <span className="player-name-display small">
+                      {challenge.challengerId === player.id
+                        ? challenge.challengedName
+                        : challenge.challengerName}
+                    </span>
                   </span>
                   {showResults && battle && (
                     <span className={`battle-result ${isWinner ? 'victory' : 'defeat'}`}>
@@ -481,8 +486,9 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
                 <span className="challenge-date">{formatDate(challenge.createdAt)}</span>
                 <span className="challenger-name">
                   {challenge.challengerId === player.id
-                    ? `Challenge to ${challenge.challengedName} was declined`
-                    : `Declined challenge from ${challenge.challengerName}`}
+                    ? <>Challenge to <span className="player-name-display small">{challenge.challengedName}</span> was declined</>
+                    : <>Declined challenge from <span className="player-name-display small">{challenge.challengerName}</span></>
+                  }
                 </span>
                 <span className="challenge-status">Declined</span>
               </div>
@@ -512,7 +518,7 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
               className="player-card"
               onClick={() => handleSelectOpponent(p)}
             >
-              <h3>{p.name}</h3>
+              <h3 className="player-name-display medium">{p.name}</h3>
               <div className="player-stats">
                 <div className="stat">
                   <span className="label">Rating:</span>
@@ -547,12 +553,12 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
           <button className="btn btn-back" onClick={() => setView('select-opponent')}>
             ← Back
           </button>
-          <h2>Select order vs {selectedOpponent?.name}</h2>
+          <h2>Select order vs <span className="player-name-display large">{selectedOpponent?.name}</span></h2>
         </div>
 
         {error && <div className="error-message">{error}</div>}
 
-        <h3>Select the order to play your cards (click cards in order)</h3>
+        <h3 className="card-selection-info">Select the order to play your cards (click cards in order)</h3>
         <div className="battle-cards">
           {battleCards.map((card, index) => {
             const orderPosition = selectedOrder.indexOf(index);
@@ -572,10 +578,16 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
         </div>
 
         <div className="order-display">
-          <p>Play Order: {selectedOrder.length === 3 ?
-            selectedOrder.map((idx, pos) => `${pos + 1}. ${battleCards[idx]?.name}`).join(', ') :
-            'Select all 3 cards'
-          }</p>
+          {selectedOrder.length === 3 ? (
+            <>
+              <p className="order-title">Play Order:</p>
+              {selectedOrder.map((idx, pos) => (
+                <p key={pos} className="order-item">{pos + 1}. {battleCards[idx]?.name}</p>
+              ))}
+            </>
+          ) : (
+            <p>Select all 3 cards</p>
+          )}
         </div>
 
         <button
@@ -595,13 +607,13 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
         <button className="btn btn-back" onClick={() => setView('list')}>
           ← Back
         </button>
-        <h2>Challenge from {selectedChallenge?.challengerName}</h2>
+        <h2>Challenge from <span className="player-name-display large">{selectedChallenge?.challengerName}</span></h2>
       </div>
 
       {error && <div className="error-message">{error}</div>}
 
       <div className="challenge-details">
-        <p>{selectedChallenge?.challengerName} has challenged you to a battle!</p>
+        <p><span className="player-name-display medium">{selectedChallenge?.challengerName}</span> has challenged you to a battle!</p>
         <p>Do you accept?</p>
 
         <div className="action-buttons">
@@ -639,12 +651,12 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
           <button className="btn btn-back" onClick={() => setView('list')}>
             ← Back
           </button>
-          <h2>Select order vs {selectedChallenge?.challengerName}</h2>
+          <h2>Select order vs <span className="player-name-display large">{selectedChallenge?.challengerName}</span></h2>
         </div>
 
         {error && <div className="error-message">{error}</div>}
 
-        <h3>Select the order to play your cards (click cards in order)</h3>
+        <h3 className="card-selection-info">Select the order to play your cards (click cards in order)</h3>
         <div className="battle-cards">
           {battleCards.map((card, index) => {
             const orderPosition = selectedOrder.indexOf(index);
@@ -664,10 +676,16 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
         </div>
 
         <div className="order-display">
-          <p>Play Order: {selectedOrder.length === 3 ?
-            selectedOrder.map((idx, pos) => `${pos + 1}. ${battleCards[idx]?.name}`).join(', ') :
-            'Select all 3 cards'
-          }</p>
+          {selectedOrder.length === 3 ? (
+            <>
+              <p className="order-title">Play Order:</p>
+              {selectedOrder.map((idx, pos) => (
+                <p key={pos} className="order-item">{pos + 1}. {battleCards[idx]?.name}</p>
+              ))}
+            </>
+          ) : (
+            <p>Select all 3 cards</p>
+          )}
         </div>
 
         <button
@@ -697,6 +715,13 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
     if (!completedBattle || completedBattle.status !== 'completed') return null;
 
     const isWinner = completedBattle.winner === player.id;
+    // Determine if current player is player1 or player2 in the battle
+    const isPlayer1 = completedBattle.player1Id === player.id;
+    const myPoints = isPlayer1 ? completedBattle.player1Points : completedBattle.player2Points;
+    const opponentPoints = isPlayer1 ? completedBattle.player2Points : completedBattle.player1Points;
+    const opponentName = isPlayer1
+      ? (completedBattle.player2Name || 'AI Opponent')
+      : (completedBattle.player1Name || 'Unknown');
 
     return (
       <div className="battle-results">
@@ -716,13 +741,13 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
         <div className="final-score">
           <div className="score-display">
-            <span className="player-name">{player.name}</span>
-            <span className="points">{completedBattle.player1Points}</span>
+            <span className={`player-name-display large ${isWinner ? 'victory' : 'defeat'}`}>{player.name}</span>
+            <span className="points">{myPoints}</span>
           </div>
-          <span className="vs">VS</span>
+          <span className="player-name-display vs-separator">VS</span>
           <div className="score-display">
-            <span className="player-name">{completedBattle.player2Name || 'AI Opponent'}</span>
-            <span className="points">{completedBattle.player2Points}</span>
+            <span className={`player-name-display large ${opponentName === 'AI Opponent' ? 'ai-opponent' : ''} ${!isWinner ? 'victory' : 'defeat'}`}>{opponentName}</span>
+            <span className="points">{opponentPoints}</span>
           </div>
         </div>
 
@@ -735,8 +760,14 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
         <div className="rounds-summary">
           <h3>Battle Summary</h3>
-          {completedBattle.rounds.map((round, index) => (
-            <div key={index} className={`round-summary ${round.winner === 'player1' ? 'won' : round.winner === 'player2' ? 'lost' : 'draw'}`}>
+          {completedBattle.rounds.map((round, index) => {
+            // Determine if current player won this round
+            const playerWon = isPlayer1 ? round.winner === 'player1' : round.winner === 'player2';
+            const playerLost = isPlayer1 ? round.winner === 'player2' : round.winner === 'player1';
+            const roundClass = playerWon ? 'won' : playerLost ? 'lost' : 'draw';
+
+            return (
+            <div key={index} className={`round-summary ${roundClass}`}>
               <div className="round-header">
                 Round {round.roundNumber} - {getAbilityIcon(round.ability)} {round.ability.toUpperCase()}
               </div>
@@ -761,7 +792,8 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {isWinner && completedBattle.isSimulation && (

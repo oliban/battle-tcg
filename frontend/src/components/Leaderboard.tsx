@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { leaderboardAPI } from '../services/api';
 import './Leaderboard.css';
+import './PlayerName.css';
 
 interface LeaderboardEntry {
   rank: number;
@@ -150,7 +151,7 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ currentPlayerId }) => {
                 <span className="rank-badge">{getRankBadge(entry.rank)}</span>
               </div>
               <div className="col-player">
-                <span className="player-name">{entry.name}</span>
+                <span className="player-name-display medium epic">{entry.name}</span>
                 {entry.id === currentPlayerId && (
                   <span className="you-badge">YOU</span>
                 )}
