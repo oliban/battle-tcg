@@ -129,8 +129,8 @@ class DbStore {
             continue;
           }
 
-          // Add small increments to ensure different timestamps
-          const timestamp = new Date(baseTime + index).toISOString();
+          // Add 1 second increments to ensure different timestamps for proper sorting
+          const timestamp = new Date(baseTime + (index * 1000)).toISOString();
           console.log('[DbStore] Adding card to player:', { playerId: id, cardId, timestamp });
 
           // Use direct SQL with explicit timestamp
