@@ -80,8 +80,12 @@ class DbStore {
   }
 
   updatePlayer(id: string, updates: Partial<Player>): Player | undefined {
+    console.log('[DbStore] Updating player:', id);
     const player = this.getPlayer(id);
-    if (!player) return undefined;
+    if (!player) {
+      console.error('[DbStore] Player not found for update:', id);
+      return undefined;
+    }
 
     // Update basic fields
     if (updates.coins !== undefined || updates.rating !== undefined) {
@@ -109,6 +113,8 @@ class DbStore {
 
       // Clear existing cards and add all cards from the update
       gameDb.transaction(() => {
+        console.log('[DbStore] Updating player cards for player:', id);
+
         // First, remove all current card associations
         gameDb.connection.prepare('DELETE FROM player_cards WHERE player_id = ?').run(id);
 
@@ -116,8 +122,17 @@ class DbStore {
         let index = 0;
         const baseTime = Date.now();
         for (const cardId of updatedCards) {
+          // Check if card exists before inserting
+          const cardExists = gameDb.connection.prepare('SELECT id FROM cards WHERE id = ?').get(cardId);
+          if (!cardExists) {
+            console.error('[DbStore] Card does not exist, skipping:', cardId);
+            continue;
+          }
+
           // Add small increments to ensure different timestamps
           const timestamp = new Date(baseTime + index).toISOString();
+          console.log('[DbStore] Adding card to player:', { playerId: id, cardId, timestamp });
+
           // Use direct SQL with explicit timestamp
           gameDb.connection.prepare(
             'INSERT OR IGNORE INTO player_cards (player_id, card_id, acquired_at) VALUES (?, ?, ?)'
@@ -187,8 +202,8 @@ class DbStore {
       card.titleModifiers?.strength || 0,
       card.titleModifiers?.speed || 0,
       card.titleModifiers?.agility || 0,
+      card.criticalHitChance || 0,
       card.rarity,
-      card.criticalHitChance || null,
       card.createdBy
     );
 
@@ -775,7 +790,14 @@ class DbStore {
   getBaseCards(): Card[] {
     const rows = gameDb.queries.getAllCards.all();
     return rows
-      .filter((row: any) => !row.id.includes('_'))
+      .filter((row: any) => {
+        // Include test cards (they start with 'test_card_')
+        if (row.id.startsWith('test_card_')) return true;
+        // Exclude variant cards (contain underscore but don't start with test_card_)
+        if (row.id.includes('_')) return false;
+        // Include all other base cards
+        return true;
+      })
       .map((row: any) => this.rowToCard(row));
   }
 

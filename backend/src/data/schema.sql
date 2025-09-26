@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS cards (
     title_modifier_strength INTEGER DEFAULT 0,
     title_modifier_speed INTEGER DEFAULT 0,
     title_modifier_agility INTEGER DEFAULT 0,
+    critical_hit_chance REAL DEFAULT 0,
     rarity TEXT CHECK (rarity IN ('common', 'uncommon', 'rare')) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_by TEXT REFERENCES players(id)
@@ -82,8 +83,8 @@ CREATE TABLE IF NOT EXISTS battle_rounds (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     battle_id TEXT REFERENCES battles(id) ON DELETE CASCADE,
     round_number INTEGER NOT NULL,
-    player1_card_id TEXT REFERENCES cards(id),
-    player2_card_id TEXT REFERENCES cards(id),
+    player1_card_id TEXT,
+    player2_card_id TEXT,
     ability TEXT CHECK (ability IN ('strength', 'speed', 'agility')) NOT NULL,
     player1_roll INTEGER NOT NULL,
     player2_roll INTEGER NOT NULL,
@@ -100,7 +101,7 @@ CREATE TABLE IF NOT EXISTS challenges (
     id TEXT PRIMARY KEY,
     challenger_id TEXT REFERENCES players(id),
     challenger_name TEXT NOT NULL,
-    challenged_id TEXT REFERENCES players(id),
+    challenged_id TEXT, -- Can be NULL for AI challenges
     challenged_name TEXT NOT NULL,
     status TEXT CHECK (status IN ('pending', 'accepted', 'declined', 'expired', 'ready', 'completed')) NOT NULL,
     battle_id TEXT REFERENCES battles(id),
@@ -129,6 +130,27 @@ CREATE TABLE IF NOT EXISTS notifications (
     is_read BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME
+);
+
+-- Reward types table
+CREATE TABLE IF NOT EXISTS reward_types (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    category TEXT CHECK (category IN ('voice', 'avatar', 'card_back', 'emote', 'title')) NOT NULL,
+    rarity TEXT CHECK (rarity IN ('common', 'uncommon', 'rare', 'legendary')) NOT NULL,
+    metadata TEXT, -- JSON data for additional properties
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Player rewards table
+CREATE TABLE IF NOT EXISTS player_rewards (
+    player_id TEXT REFERENCES players(id) ON DELETE CASCADE,
+    reward_id TEXT REFERENCES reward_types(id) ON DELETE CASCADE,
+    source TEXT, -- How the reward was obtained (e.g., 'initial', 'achievement', 'purchase')
+    unlocked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    equipped BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (player_id, reward_id)
 );
 
 -- Create indexes for performance

@@ -211,7 +211,14 @@ export const challengeAPI = {
     return response.data;
   },
 
-  setupChallenge: async (challengeId: string, cards: string[], order: number[]): Promise<Challenge> => {
+  createAIChallenge: async (challengerId: string): Promise<Challenge> => {
+    const response = await api.post('/challenges/create-ai', {
+      challengerId,
+    });
+    return response.data;
+  },
+
+  setupChallenge: async (challengeId: string, cards: string[], order: number[]): Promise<Challenge | { challenge: Challenge; battle: Battle }> => {
     const response = await api.post(`/challenges/${challengeId}/setup`, {
       cards,
       order,

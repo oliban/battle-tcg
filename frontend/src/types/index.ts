@@ -46,7 +46,7 @@ export interface Player {
 export interface Battle {
   id: string;
   player1Id: string;
-  player2Id: string;
+  player2Id: string | null;
   player1Name?: string;
   player2Name?: string;
   isSimulation: boolean;
@@ -124,7 +124,7 @@ export interface Challenge {
   id: string;
   challengerId: string;
   challengerName: string;
-  challengedId: string;
+  challengedId: string | null;
   challengedName: string;
   status: 'pending' | 'accepted' | 'declined' | 'expired' | 'ready' | 'completed';
   challengerCards?: string[];

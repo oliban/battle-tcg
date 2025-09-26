@@ -27,10 +27,24 @@ router.post('/create', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const player = gameStore.getPlayer(playerId);
+  let player = gameStore.getPlayer(playerId);
+  let actualPlayerId = playerId; // Use a new variable that we can modify
+
   if (!player) {
-    console.log('[Card Create] Player not found:', playerId);
-    return res.status(404).json({ error: 'Player not found' });
+    console.log('[Card Create] Player not found in database, checking by name:', playerId);
+    // Try to find or create player if they don't exist (migration case)
+    // Extract name from old player ID format if needed
+    const playerName = playerId.startsWith('player_') ? 'Bob' : playerId;
+
+    player = gameStore.getPlayerByName(playerName);
+    if (!player) {
+      console.log('[Card Create] Creating new player:', playerName);
+      player = gameStore.createPlayer(playerName);
+    }
+
+    // Update the actual player ID to use from database
+    actualPlayerId = player.id;
+    console.log('[Card Create] Using player from database:', actualPlayerId);
   }
 
   // Use totalCost if provided (includes reroll costs), otherwise default to 50
@@ -49,22 +63,32 @@ router.post('/create', (req: Request, res: Response) => {
     abilities,
     rarity,
     createdAt: new Date(),
-    createdBy: playerId
+    createdBy: actualPlayerId
   };
 
   console.log('[Card Create] Creating card:', card.id);
 
   try {
-    gameStore.createCard(card);
-    console.log('[Card Create] Card created successfully');
+    // Create the card first
+    const createdCard = gameStore.createCard(card);
+    console.log('[Card Create] Card created successfully:', createdCard.id);
 
-    gameStore.updatePlayer(playerId, {
+    // Then update the player with the new card
+    const updatedPlayer = gameStore.updatePlayer(actualPlayerId, {
       coins: player.coins - cost,
-      cards: [...player.cards, card.id]
+      cards: [...player.cards, createdCard.id]
     });
+
+    if (!updatedPlayer) {
+      console.error('[Card Create] Failed to update player - player might not exist in database');
+      // Roll back by deleting the card if player update fails
+      gameStore.deleteCard(createdCard.id);
+      return res.status(500).json({ error: 'Failed to update player inventory' });
+    }
+
     console.log('[Card Create] Player updated successfully');
 
-    res.json({ card, remainingCoins: player.coins - cost });
+    res.json({ card: createdCard, remainingCoins: player.coins - cost });
     console.log('[Card Create] Response sent successfully');
   } catch (error) {
     console.error('[Card Create] Error:', error);

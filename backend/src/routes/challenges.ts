@@ -83,6 +83,34 @@ router.post('/create', (req: Request, res: Response) => {
   res.json(challenge);
 });
 
+// Create an AI challenge
+router.post('/create-ai', (req: Request, res: Response) => {
+  const { challengerId } = req.body;
+
+  // Validate player exists
+  const challenger = gameStore.getPlayer(challengerId);
+  if (!challenger) {
+    return res.status(404).json({ error: 'Challenger not found' });
+  }
+
+  // Check if challenger has a valid deck
+  if (!challenger.deck || challenger.deck.length !== 10) {
+    return res.status(400).json({ error: 'You need a deck of exactly 10 cards to challenge the AI' });
+  }
+
+  // Create the AI challenge
+  const challenge = gameStore.createChallenge({
+    challengerId,
+    challengerName: challenger.name,
+    challengedId: null, // NULL for AI challenges
+    challengedName: 'AI Opponent',
+    status: 'accepted', // AI automatically accepts
+    isAI: true
+  });
+
+  res.json(challenge);
+});
+
 // Set challenger's cards and order
 router.post('/:challengeId/setup', (req: Request, res: Response) => {
   const { challengeId } = req.params;
@@ -93,8 +121,13 @@ router.post('/:challengeId/setup', (req: Request, res: Response) => {
     return res.status(404).json({ error: 'Challenge not found' });
   }
 
-  if (challenge.status !== 'pending') {
+  // For AI challenges, accept both 'pending' and 'accepted' status
+  const isAIChallenge = challenge.challengedId === null;
+  if (!isAIChallenge && challenge.status !== 'pending') {
     return res.status(400).json({ error: 'Challenge is not in pending state' });
+  }
+  if (isAIChallenge && challenge.status !== 'accepted') {
+    return res.status(400).json({ error: 'AI challenge is not in accepted state' });
   }
 
   // Validate cards and order
@@ -113,6 +146,74 @@ router.post('/:challengeId/setup', (req: Request, res: Response) => {
     challengerCards: cards,
     challengerOrder: order
   });
+
+  // If it's an AI challenge, immediately set up the AI's cards and execute the battle
+  if (isAIChallenge) {
+    // Generate random AI deck from all available cards
+    const allCards = gameStore.getAllCards();
+    if (allCards.length < 10) {
+      return res.status(400).json({ error: 'Not enough cards available for AI battle' });
+    }
+
+    // Create AI deck
+    const aiDeck = [...allCards]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 10)
+      .map(c => c.id);
+
+    // Select 3 random cards from AI deck
+    const aiCards = [...aiDeck]
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3);
+
+    // Generate random order for AI
+    const aiOrder = [0, 1, 2].sort(() => Math.random() - 0.5);
+
+    // Update challenge with AI's cards
+    gameStore.updateChallenge(challengeId, {
+      challengedCards: aiCards,
+      challengedOrder: aiOrder,
+      status: 'ready'
+    });
+
+    // Create and execute the battle
+    const battle = gameStore.createBattle({
+      id: `battle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      player1Id: challenge.challengerId,
+      player2Id: null as any, // AI battles have null player2Id
+      player1Name: challenge.challengerName,
+      player2Name: 'AI Opponent',
+      isSimulation: true,
+      player1Deck: gameStore.getPlayer(challenge.challengerId)!.deck,
+      player2Deck: aiDeck,
+      player1Cards: cards,
+      player2Cards: aiCards,
+      player1Order: order,
+      player2Order: aiOrder,
+      rounds: [],
+      currentRound: 0,
+      player1Points: 0,
+      player2Points: 0,
+      player1TotalDamage: 0,
+      player2TotalDamage: 0,
+      status: 'ready',
+      createdAt: new Date()
+    });
+
+    // Execute battle immediately
+    const executeResult = executeBattleLogic(battle);
+
+    // Update challenge with battle ID
+    const finalChallenge = gameStore.updateChallenge(challengeId, {
+      battleId: battle.id,
+      status: 'completed'
+    });
+
+    return res.json({
+      challenge: finalChallenge,
+      battle: executeResult
+    });
+  }
 
   res.json(updated);
 });
@@ -199,7 +300,7 @@ router.post('/:challengeId/setup-defense', (req: Request, res: Response) => {
     player2Name: challenge.challengedName,
     isSimulation: false,
     player1Deck: gameStore.getPlayer(challenge.challengerId)!.deck,
-    player2Deck: gameStore.getPlayer(challenge.challengedId)!.deck,
+    player2Deck: challenge.challengedId ? gameStore.getPlayer(challenge.challengedId)!.deck : [], // Empty for AI, will be set later
     player1Cards: challenge.challengerCards!,
     player2Cards: cards,
     player1Order: challenge.challengerOrder,
@@ -232,13 +333,16 @@ router.post('/:challengeId/setup-defense', (req: Request, res: Response) => {
     { challengeId: challenge.id, battleId: battle.id }
   );
 
-  gameStore.sendNotification(
-    challenge.challengedId,
-    'battle_complete',
-    'Battle Complete!',
-    `Your battle against ${challenge.challengerName} is ready to view!`,
-    { challengeId: challenge.id, battleId: battle.id }
-  );
+  // Only send notification to real players, not AI
+  if (challenge.challengedId) {
+    gameStore.sendNotification(
+      challenge.challengedId,
+      'battle_complete',
+      'Battle Complete!',
+      `Your battle against ${challenge.challengerName} is ready to view!`,
+      { challengeId: challenge.id, battleId: battle.id }
+    );
+  }
 
   res.json({
     challenge: updatedChallenge,

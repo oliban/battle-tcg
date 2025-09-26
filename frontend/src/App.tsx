@@ -6,7 +6,6 @@ import CardCreator from './components/CardCreator';
 import CardComponent from './components/Card';
 import PackOpening from './components/PackOpening';
 import DeckBuilder from './components/DeckBuilder';
-import Battle from './components/Battle';
 import voiceService from './services/voice';
 import NotificationBell from './components/NotificationBell';
 import Challenge from './components/Challenge';
@@ -23,7 +22,6 @@ function App() {
   const [selectedVoice, setSelectedVoice] = useState<string>('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [collectionSortBy, setCollectionSortBy] = useState<'latest' | 'total' | 'strength' | 'speed' | 'agility' | 'rarity'>('latest');
-  const [specificBattleId, setSpecificBattleId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedPlayerId = localStorage.getItem('playerId');
@@ -258,10 +256,6 @@ function App() {
               onChallengeClick={(challengeId) => {
                 setCurrentView('challenge');
               }}
-              onBattleClick={(battleId) => {
-                setSpecificBattleId(battleId);
-                setCurrentView('battle');
-              }}
             />
           )}
         </div>
@@ -283,11 +277,8 @@ function App() {
         <button onClick={() => setCurrentView('shop')} className={currentView === 'shop' ? 'active' : ''}>
           Shop
         </button>
-        <button onClick={() => setCurrentView('battle')} className={currentView === 'battle' ? 'active' : ''}>
-          Battle
-        </button>
         <button onClick={() => setCurrentView('challenge')} className={currentView === 'challenge' ? 'active' : ''}>
-          Challenge
+          Battle Arena
         </button>
         <button onClick={() => setCurrentView('leaderboard')} className={currentView === 'leaderboard' ? 'active' : ''}>
           Leaderboard
@@ -304,7 +295,7 @@ function App() {
             <div className="quick-actions">
               <button onClick={() => setCurrentView('creator')}>Create a Card (50 coins)</button>
               <button onClick={() => setCurrentView('shop')}>Buy Card Packs</button>
-              <button onClick={() => setCurrentView('battle')}>Start a Battle</button>
+              <button onClick={() => setCurrentView('challenge')}>Battle Arena</button>
             </div>
           </div>
         )}
@@ -428,14 +419,6 @@ function App() {
           />
         )}
 
-        {currentView === 'battle' && (
-          <Battle
-            player={player}
-            playerCards={playerCards}
-            specificBattleId={specificBattleId}
-            onBattleComplete={() => setSpecificBattleId(null)}
-          />
-        )}
 
         {currentView === 'pack-opening' && packCards.length > 0 && (
           <PackOpening
@@ -447,10 +430,6 @@ function App() {
         {currentView === 'challenge' && (
           <Challenge
             player={player}
-            onBattleStart={(battleId) => {
-              setSpecificBattleId(battleId);
-              setCurrentView('battle');
-            }}
             onUpdate={() => {
               // Refresh player data if needed
               loadPlayer(player.id);

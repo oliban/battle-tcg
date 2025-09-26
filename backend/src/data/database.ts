@@ -59,7 +59,7 @@ class GameDatabase {
           strength, speed, agility,
           base_strength, base_speed, base_agility,
           title_modifier_strength, title_modifier_speed, title_modifier_agility,
-          rarity, critical_hit_chance, created_by
+          critical_hit_chance, rarity, created_by
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `),
 

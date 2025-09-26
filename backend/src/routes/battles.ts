@@ -185,10 +185,16 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
   const { battleId } = req.params;
 
   try {
+    console.log(`[Battle Execute] Starting execution for battle ${battleId}`);
     const battle = gameStore.getBattle(battleId);
     if (!battle) {
+      console.log(`[Battle Execute] Battle not found: ${battleId}`);
       return res.status(404).json({ error: 'Battle not found' });
     }
+
+    console.log(`[Battle Execute] Battle status: ${battle.status}`);
+    console.log(`[Battle Execute] Player1 order:`, battle.player1Order);
+    console.log(`[Battle Execute] Player2 order:`, battle.player2Order);
 
     if (battle.status !== 'ready') {
       return res.status(400).json({ error: 'Battle is not ready to execute' });
@@ -386,6 +392,7 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
     player2CardDetails
   });
   } catch (error) {
+    console.error('[Battle Execute] Error:', error);
     res.status(500).json({ error: 'Failed to execute battle: ' + (error as any).message });
   }
 });

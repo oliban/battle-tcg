@@ -64,7 +64,7 @@ export interface PlayerReward {
 export interface Battle {
   id: string;
   player1Id: string;
-  player2Id: string;
+  player2Id: string | null;
   player1Name?: string;
   player2Name?: string;
   isSimulation: boolean; // True for AI battles
@@ -139,7 +139,7 @@ export interface Challenge {
   id: string;
   challengerId: string;
   challengerName: string;
-  challengedId: string;
+  challengedId: string | null; // Can be null for AI challenges
   challengedName: string;
   status: 'pending' | 'accepted' | 'declined' | 'expired' | 'ready' | 'completed';
   challengerCards?: string[];
@@ -147,6 +147,7 @@ export interface Challenge {
   challengedCards?: string[];
   challengedOrder?: number[];
   battleId?: string;
+  isAI?: boolean; // Flag to indicate if this is an AI challenge
   createdAt: Date;
   expiresAt: Date;
 }
