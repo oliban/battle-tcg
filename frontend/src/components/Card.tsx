@@ -12,7 +12,11 @@ interface CardProps {
 }
 
 const Card: React.FC<CardProps> = ({ card, onClick, selected, count, hideCrit }) => {
-  const totalPoints = card.abilities.strength + card.abilities.speed + card.abilities.agility;
+  // Calculate total including title modifiers
+  const strengthTotal = card.abilities.strength + (card.titleModifiers?.strength || 0);
+  const speedTotal = card.abilities.speed + (card.titleModifiers?.speed || 0);
+  const agilityTotal = card.abilities.agility + (card.titleModifiers?.agility || 0);
+  const totalPoints = strengthTotal + speedTotal + agilityTotal;
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {

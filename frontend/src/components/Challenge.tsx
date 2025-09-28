@@ -714,6 +714,16 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
   const renderBattleResults = () => {
     if (!completedBattle || completedBattle.status !== 'completed') return null;
 
+    // Debug: Log the battle data to see critical hit info
+    console.log('[Challenge] Battle Results - Full battle data:', completedBattle);
+    console.log('[Challenge] Battle Results - Rounds with critical info:', completedBattle.rounds.map(r => ({
+      round: r.roundNumber,
+      p1Crit: r.player1CriticalHit,
+      p2Crit: r.player2CriticalHit,
+      damage: r.damageDealt,
+      winner: r.winner
+    })));
+
     const isWinner = completedBattle.winner === player.id;
     // Determine if current player is player1 or player2 in the battle
     const isPlayer1 = completedBattle.player1Id === player.id;
@@ -753,8 +763,15 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
         {completedBattle.winReason && (
           <p className="win-reason">
-            Won by: {completedBattle.winReason === 'coin-toss' ? 'Coin Toss' :
-                     completedBattle.winReason === 'damage' ? 'Total Damage' : 'Points'}
+            {isWinner ? player.name : opponentName} wins by{' '}
+            {completedBattle.winReason === 'coin-toss' ? 'Coin Toss' :
+             completedBattle.winReason === 'damage' ?
+               `Total Damage ${isWinner
+                 ? (isPlayer1 ? completedBattle.player1TotalDamage : completedBattle.player2TotalDamage)
+                 : (isPlayer1 ? completedBattle.player2TotalDamage : completedBattle.player1TotalDamage)} - ${isWinner
+                 ? (isPlayer1 ? completedBattle.player2TotalDamage : completedBattle.player1TotalDamage)
+                 : (isPlayer1 ? completedBattle.player1TotalDamage : completedBattle.player2TotalDamage)}` :
+               `Points ${isWinner ? myPoints : opponentPoints} - ${isWinner ? opponentPoints : myPoints}`}
           </p>
         )}
 
@@ -772,23 +789,70 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
                 Round {round.roundNumber} - {getAbilityIcon(round.ability)} {round.ability.toUpperCase()}
               </div>
               <div className="round-details">
-                <div className="player-result">
+                <div className="player-column">
+                  <div className="player-label">{isPlayer1 ? 'You' : (completedBattle.player1Name || 'Player 1')}</div>
                   <span className="card-name">{round.player1CardName}</span>
-                  {round.player1CriticalHit && <span className="critical">💥 CRITICAL!</span>}
-                  <span className="total">
-                    {round.player1StatValue} + {round.player1Roll} = {round.player1Total}
-                  </span>
+                  <div className="stats-list">
+                    <div className="stat-line">
+                      <span className="stat-label">{round.ability.charAt(0).toUpperCase() + round.ability.slice(1)}:</span>
+                      <span className="stat-value">{round.player1StatValue}</span>
+                    </div>
+                    <div className="stat-line">
+                      <span className="stat-label">Dice roll:</span>
+                      <span className="stat-value">{round.player1Roll}</span>
+                    </div>
+                    {round.player1CriticalHit && (
+                      <div className="stat-line critical">
+                        <span className="stat-label">Critical:</span>
+                        <span className="stat-value">{round.player1Roll}</span>
+                      </div>
+                    )}
+                    <div className="stat-line total">
+                      <span className="stat-label">Total:</span>
+                      <span className="stat-value">{round.player1Total}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="damage">
-                  {round.damageDealt > 0 && <span className="damage-amount">⚔️ {round.damageDealt} damage</span>}
-                  {round.winner === 'draw' && <span className="draw">DRAW</span>}
+
+                <div className="battle-outcome">
+                  {round.winner === 'draw' ? (
+                    <div className="draw-result">DRAW</div>
+                  ) : (
+                    <>
+                      <div className="winner-arrow">
+                        {round.winner === 'player1' ? '→' : '←'}
+                      </div>
+                      <div className="damage-display">
+                        <span className="damage-label">Damage:</span>
+                        <span className="damage-value">{round.damageDealt}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="player-result">
+
+                <div className="player-column">
+                  <div className="player-label">{isPlayer1 ? (completedBattle.player2Name || 'Opponent') : 'You'}</div>
                   <span className="card-name">{round.player2CardName}</span>
-                  {round.player2CriticalHit && <span className="critical">💥 CRITICAL!</span>}
-                  <span className="total">
-                    {round.player2StatValue} + {round.player2Roll} = {round.player2Total}
-                  </span>
+                  <div className="stats-list">
+                    <div className="stat-line">
+                      <span className="stat-label">{round.ability.charAt(0).toUpperCase() + round.ability.slice(1)}:</span>
+                      <span className="stat-value">{round.player2StatValue}</span>
+                    </div>
+                    <div className="stat-line">
+                      <span className="stat-label">Dice roll:</span>
+                      <span className="stat-value">{round.player2Roll}</span>
+                    </div>
+                    {round.player2CriticalHit && (
+                      <div className="stat-line critical">
+                        <span className="stat-label">Critical:</span>
+                        <span className="stat-value">{round.player2Roll}</span>
+                      </div>
+                    )}
+                    <div className="stat-line total">
+                      <span className="stat-label">Total:</span>
+                      <span className="stat-value">{round.player2Total}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

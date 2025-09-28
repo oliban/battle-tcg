@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { gameStore } from '../data/store';
+import { executeBattle } from '../services/battleExecutor';
 
 const router = Router();
 
@@ -200,8 +201,8 @@ router.post('/:challengeId/setup', (req: Request, res: Response) => {
       createdAt: new Date()
     });
 
-    // Execute battle immediately
-    const executeResult = executeBattleLogic(battle);
+    // Execute battle immediately using shared battleExecutor service
+    const executeResult = executeBattle(battle);
 
     // Update challenge with battle ID
     const finalChallenge = gameStore.updateChallenge(challengeId, {
@@ -315,8 +316,8 @@ router.post('/:challengeId/setup-defense', (req: Request, res: Response) => {
     createdAt: new Date()
   });
 
-  // Execute battle immediately
-  const executeResult = executeBattleLogic(battle);
+  // Execute battle immediately using shared battleExecutor service
+  const executeResult = executeBattle(battle);
 
   // Update challenge with battle ID
   const updatedChallenge = gameStore.updateChallenge(challengeId, {
@@ -384,153 +385,6 @@ router.post('/:challengeId/decline', (req: Request, res: Response) => {
 
   res.json(updated);
 });
-
-// Helper function to execute battle logic (copied from battles.ts)
-function executeBattleLogic(battle: any) {
-  const rollD6 = (): number => Math.floor(Math.random() * 6) + 1;
-  const selectRandomAbility = (): 'strength' | 'speed' | 'agility' => {
-    const abilities: ('strength' | 'speed' | 'agility')[] = ['strength', 'speed', 'agility'];
-    return abilities[Math.floor(Math.random() * abilities.length)];
-  };
-
-  const rounds: any[] = [];
-  let player1TotalDamage = 0;
-  let player2TotalDamage = 0;
-  let player1Points = 0;
-  let player2Points = 0;
-
-  for (let i = 0; i < 3; i++) {
-    const player1CardId = battle.player1Cards[battle.player1Order![i]];
-    const player2CardId = battle.player2Cards[battle.player2Order![i]];
-
-    const player1Card = gameStore.getCard(player1CardId);
-    const player2Card = gameStore.getCard(player2CardId);
-
-    if (!player1Card || !player2Card) {
-      continue; // Skip if card not found
-    }
-
-    const ability = selectRandomAbility();
-    const player1Stat = player1Card.abilities[ability];
-    const player2Stat = player2Card.abilities[ability];
-    const player1Roll = rollD6();
-    const player2Roll = rollD6();
-    const player1Total = player1Stat + player1Roll;
-    const player2Total = player2Stat + player2Roll;
-
-    let roundWinner: 'player1' | 'player2' | 'draw';
-    let damageDealt = 0;
-
-    if (player1Total > player2Total) {
-      roundWinner = 'player1';
-      damageDealt = player1Total - player2Total;
-      player1TotalDamage += damageDealt;
-      player1Points++;
-    } else if (player2Total > player1Total) {
-      roundWinner = 'player2';
-      damageDealt = player2Total - player1Total;
-      player2TotalDamage += damageDealt;
-      player2Points++;
-    } else {
-      roundWinner = 'draw';
-      damageDealt = 0;
-    }
-
-    rounds.push({
-      roundNumber: i + 1,
-      player1CardId,
-      player2CardId,
-      player1CardName: player1Card.fullName || player1Card.name,
-      player2CardName: player2Card.fullName || player2Card.name,
-      ability,
-      player1Roll,
-      player2Roll,
-      player1StatValue: player1Stat,
-      player2StatValue: player2Stat,
-      player1Total,
-      player2Total,
-      damageDealt,
-      winner: roundWinner
-    });
-  }
-
-  // Determine overall winner
-  let winner: string;
-  let winReason: 'points' | 'damage' | 'coin-toss';
-
-  if (player1Points > player2Points) {
-    winner = battle.player1Id;
-    winReason = 'points';
-  } else if (player2Points > player1Points) {
-    winner = battle.player2Id;
-    winReason = 'points';
-  } else {
-    if (player1TotalDamage > player2TotalDamage) {
-      winner = battle.player1Id;
-      winReason = 'damage';
-    } else if (player2TotalDamage > player1TotalDamage) {
-      winner = battle.player2Id;
-      winReason = 'damage';
-    } else {
-      winner = Math.random() < 0.5 ? battle.player1Id : battle.player2Id;
-      winReason = 'coin-toss';
-    }
-  }
-
-  // Update battle with results
-  const updatedBattle = gameStore.updateBattle(battle.id, {
-    rounds,
-    currentRound: 3,
-    player1Points,
-    player2Points,
-    player1TotalDamage,
-    player2TotalDamage,
-    winner,
-    winReason,
-    status: 'completed',
-    completedAt: new Date()
-  });
-
-  // Update player statistics
-  const player1 = gameStore.getPlayer(battle.player1Id);
-  const player2 = gameStore.getPlayer(battle.player2Id);
-
-  if (player1) {
-    if (winner === battle.player1Id) {
-      gameStore.updatePlayer(battle.player1Id, {
-        wins: player1.wins + 1,
-        pvpWins: (player1.pvpWins || 0) + 1,
-        coins: player1.coins + 50,
-        rating: calculateNewRating(player1.rating || 1000, player2?.rating || 1000, true)
-      });
-    } else {
-      gameStore.updatePlayer(battle.player1Id, {
-        losses: player1.losses + 1,
-        pvpLosses: (player1.pvpLosses || 0) + 1,
-        rating: calculateNewRating(player1.rating || 1000, player2?.rating || 1000, false)
-      });
-    }
-  }
-
-  if (player2) {
-    if (winner === battle.player2Id) {
-      gameStore.updatePlayer(battle.player2Id, {
-        wins: player2.wins + 1,
-        pvpWins: (player2.pvpWins || 0) + 1,
-        coins: player2.coins + 50,
-        rating: calculateNewRating(player2.rating || 1000, player1?.rating || 1000, true)
-      });
-    } else {
-      gameStore.updatePlayer(battle.player2Id, {
-        losses: player2.losses + 1,
-        pvpLosses: (player2.pvpLosses || 0) + 1,
-        rating: calculateNewRating(player2.rating || 1000, player1?.rating || 1000, false)
-      });
-    }
-  }
-
-  return updatedBattle;
-}
 
 // Simple ELO rating calculation
 function calculateNewRating(playerRating: number, opponentRating: number, won: boolean): number {

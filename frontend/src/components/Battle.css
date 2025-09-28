@@ -506,6 +506,15 @@
   }
 }
 
+.critical-damage-breakdown {
+  display: block;
+  margin-top: 5px;
+  font-size: 13px;
+  color: #FFD700;
+  font-weight: 600;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 .rewards {
   text-align: center;
   margin: 20px 0;

@@ -133,6 +133,13 @@ router.post('/:battleId/set-order', (req: Request, res: Response) => {
   const { battleId } = req.params;
   const { playerId, order } = req.body;
 
+  console.log('=====================================');
+  console.log('SET-ORDER ENDPOINT HIT!');
+  console.log('Battle ID:', battleId);
+  console.log('Player ID:', playerId);
+  console.log('Order:', order);
+  console.log('=====================================');
+
   const battle = gameStore.getBattle(battleId);
   if (!battle) {
     return res.status(404).json({ error: 'Battle not found' });
@@ -183,6 +190,11 @@ router.post('/:battleId/set-order', (req: Request, res: Response) => {
 // Execute battle rounds
 router.post('/:battleId/execute', (req: Request, res: Response) => {
   const { battleId } = req.params;
+
+  console.log('=====================================');
+  console.log('EXECUTE ENDPOINT HIT!');
+  console.log('Battle ID:', battleId);
+  console.log('=====================================');
 
   try {
     console.log(`[Battle Execute] Starting execution for battle ${battleId}`);
@@ -238,12 +250,15 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
     const player2Total = player2Stat + player2Roll;
 
     // Check for critical hits
-    const player1CriticalHit = player1Card.criticalHitChance
-      ? Math.random() * 100 < player1Card.criticalHitChance
-      : false;
-    const player2CriticalHit = player2Card.criticalHitChance
-      ? Math.random() * 100 < player2Card.criticalHitChance
-      : false;
+    const player1CritRoll = Math.random() * 100;
+    const player1CriticalHit = player1Card.criticalHitChance && player1CritRoll < player1Card.criticalHitChance;
+
+    const player2CritRoll = Math.random() * 100;
+    const player2CriticalHit = player2Card.criticalHitChance && player2CritRoll < player2Card.criticalHitChance;
+
+    // Log critical hit rolls
+    console.log(`[Round ${i + 1}] P1 Critical: ${player1Card.criticalHitChance || 0}% chance, rolled ${player1CritRoll.toFixed(2)}, hit: ${player1CriticalHit}`);
+    console.log(`[Round ${i + 1}] P2 Critical: ${player2Card.criticalHitChance || 0}% chance, rolled ${player2CritRoll.toFixed(2)}, hit: ${player2CriticalHit}`);
 
     // Determine round winner
     let roundWinner: 'player1' | 'player2' | 'draw';
@@ -285,8 +300,8 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
       player2StatValue: player2Stat,
       player1Total,
       player2Total,
-      player1CriticalHit,
-      player2CriticalHit,
+      player1CriticalHit: player1CriticalHit ? true : undefined,
+      player2CriticalHit: player2CriticalHit ? true : undefined,
       damageDealt,
       winner: roundWinner
     });

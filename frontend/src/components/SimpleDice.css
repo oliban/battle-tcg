@@ -1,0 +1,112 @@
+.simple-dice-container {
+  display: inline-block;
+  position: relative;
+}
+
+.simple-dice-container.small .simple-dice {
+  width: 50px;
+  height: 50px;
+}
+
+.simple-dice-container.medium .simple-dice {
+  width: 80px;
+  height: 80px;
+}
+
+.simple-dice-container.large .simple-dice {
+  width: 120px;
+  height: 120px;
+}
+
+.simple-dice {
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.simple-dice.rolling {
+  animation: simpleDiceRoll 0.2s infinite linear;
+}
+
+@keyframes simpleDiceRoll {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(90deg) scale(0.95);
+  }
+  50% {
+    transform: rotate(180deg) scale(1);
+  }
+  75% {
+    transform: rotate(270deg) scale(0.95);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.dice-dots {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  padding: 15%;
+  box-sizing: border-box;
+}
+
+.dot {
+  position: absolute;
+  width: 20%;
+  height: 20%;
+  background-color: #000;
+  border-radius: 50%;
+}
+
+/* Dot positions */
+.dot.center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.dot.top-left {
+  top: 15%;
+  left: 15%;
+}
+
+.dot.top-right {
+  top: 15%;
+  right: 15%;
+}
+
+.dot.middle-left {
+  top: 50%;
+  left: 15%;
+  transform: translateY(-50%);
+}
+
+.dot.middle-right {
+  top: 50%;
+  right: 15%;
+  transform: translateY(-50%);
+}
+
+.dot.bottom-left {
+  bottom: 15%;
+  left: 15%;
+}
+
+.dot.bottom-right {
+  bottom: 15%;
+  right: 15%;
+}
+
+/* Debug info styling */
+.dice-debug {
+  text-align: center;
+  font-family: monospace;
+  opacity: 0.6;
+}

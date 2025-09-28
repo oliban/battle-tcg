@@ -212,6 +212,16 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards, specificBattleId, 
   const renderBattleResults = () => {
     if (!currentBattle || currentBattle.status !== 'completed') return null;
 
+    // Debug: Log the battle data to see critical hit info
+    console.log('Battle Results - Full battle data:', currentBattle);
+    console.log('Battle Results - Rounds with critical info:', currentBattle.rounds.map(r => ({
+      round: r.roundNumber,
+      p1Crit: r.player1CriticalHit,
+      p2Crit: r.player2CriticalHit,
+      damage: r.damageDealt,
+      winner: r.winner
+    })));
+
     const isWinner = currentBattle.winner === player.id;
 
     return (
@@ -299,9 +309,17 @@ const Battle: React.FC<BattleProps> = ({ player, playerCards, specificBattleId, 
                 <div className="damage-dealt">
                   {((round.player1CriticalHit && round.winner === 'player1') ||
                     (round.player2CriticalHit && round.winner === 'player2')) && (
-                    <span className="critical-hit-indicator">⚡ CRITICAL HIT! ⚡</span>
+                    <>
+                      <span className="critical-hit-indicator">⚡ CRITICAL HIT! ⚡</span>
+                      <span className="critical-damage-breakdown">
+                        Base: {round.damageDealt / 2} → Doubled: {round.damageDealt}
+                      </span>
+                    </>
                   )}
-                  Damage: {round.damageDealt}
+                  {!((round.player1CriticalHit && round.winner === 'player1') ||
+                    (round.player2CriticalHit && round.winner === 'player2')) && (
+                    <span>Damage: {round.damageDealt}</span>
+                  )}
                 </div>
               )}
             </div>

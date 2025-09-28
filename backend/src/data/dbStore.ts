@@ -385,7 +385,9 @@ class DbStore {
         player1Total: r.player1_total,
         player2Total: r.player2_total,
         damageDealt: r.damage_dealt,
-        winner: r.winner
+        winner: r.winner,
+        player1CriticalHit: r.player1_critical_hit === 1,
+        player2CriticalHit: r.player2_critical_hit === 1
       })),
       currentRound: rounds.length,
       player1Points: row.player1_points,
@@ -446,8 +448,9 @@ class DbStore {
           battle_id, round_number, player1_card_id, player2_card_id,
           ability, player1_roll, player2_roll,
           player1_stat_value, player2_stat_value,
-          player1_total, player2_total, damage_dealt, winner
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          player1_total, player2_total, damage_dealt, winner,
+          player1_critical_hit, player2_critical_hit
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       newRounds.forEach((round: BattleRound) => {
@@ -458,7 +461,9 @@ class DbStore {
           round.ability, round.player1Roll, round.player2Roll,
           round.player1StatValue, round.player2StatValue,
           round.player1Total, round.player2Total,
-          round.damageDealt, round.winner
+          round.damageDealt, round.winner,
+          round.player1CriticalHit ? 1 : 0,
+          round.player2CriticalHit ? 1 : 0
         );
       });
     }
