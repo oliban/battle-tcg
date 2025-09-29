@@ -33,6 +33,22 @@ const getToolImageUrl = (toolName?: string): string | null => {
   return toolImageMap[toolName] || null;
 };
 
+// Helper to check if a tool is active for the current ability
+const isToolActiveForAbility = (toolName: string | undefined, ability: string): boolean => {
+  if (!toolName) return false;
+
+  const toolAbilityMap: Record<string, string[]> = {
+    'Running Shoes': ['speed'],
+    'Sledge Hammer': ['strength'],
+    'Lube Tube': ['agility'],
+    'Spear': ['strength', 'speed', 'agility'], // Works for any ability
+    'Binoculars': [] // Special tool, not ability-based
+  };
+
+  const validAbilities = toolAbilityMap[toolName] || [];
+  return validAbilities.includes(ability.toLowerCase());
+};
+
 const BattleAnimation: React.FC<BattleAnimationProps> = ({
   battle,
   playerCards,
@@ -152,14 +168,14 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
 
     // Reset state
     setRoundState({
-      phase: 'intro',
+      phase: 'intro' as RoundState['phase'],
       player1DiceRolling: false,
       player2DiceRolling: false,
       showResult: false
     });
 
     // Intro phase - show round number and announce it
-    console.log(`Round ${currentRoundIndex + 1}: Showing intro`);
+    console.log(`[PHASE 1] Round ${currentRoundIndex + 1}: INTRO - Showing round number`);
     voiceService.speak(`Round ${currentRoundIndex + 1}`, {
       rate: 0.9,
       pitch: 1.2,
@@ -168,7 +184,7 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
     await delay(1500);
 
     // Show cards first
-    console.log(`Round ${currentRoundIndex + 1}: Showing cards`);
+    console.log(`[PHASE 2] Round ${currentRoundIndex + 1}: CARDS - Displaying player cards`);
     setRoundState(prev => ({ ...prev, phase: 'cards' }));
 
     // Get fresh card details
@@ -206,7 +222,7 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
     await delay(2500);
 
     // Show cards flexing their strongest skill
-    console.log(`Round ${currentRoundIndex + 1}: Cards flexing`);
+    console.log(`[PHASE 3] Round ${currentRoundIndex + 1}: CARDS-FLEX - Cards showing strongest stats`);
     setRoundState(prev => ({
       ...prev,
       phase: 'cards-flex',
@@ -216,7 +232,9 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
     await delay(3000); // Extended flex time
 
     // Show ability being tested
-    console.log(`Round ${currentRoundIndex + 1}: Showing ability - ${round.ability}`);
+    console.log(`[PHASE 4] Round ${currentRoundIndex + 1}: ABILITY - Revealing ability: ${round.ability}`);
+    console.log(`  - Player 1 Tool: ${round.player1ToolName || 'None'} (Active for ${round.ability}? ${isToolActiveForAbility(round.player1ToolName, round.ability)})`);
+    console.log(`  - Player 2 Tool: ${round.player2ToolName || 'None'} (Active for ${round.ability}? ${isToolActiveForAbility(round.player2ToolName, round.ability)})`);
     setRoundState(prev => ({ ...prev, phase: 'ability' }));
 
     // Announce the actual ability being tested
@@ -234,6 +252,8 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
       await delay(1000);
 
       // Reset tool bonus display, then animate it
+      console.log(`[PHASE 5] Round ${currentRoundIndex + 1}: TOOL-ANNOUNCE - Announcing and applying tool bonuses`);
+      console.log(`  - P1 Tool Bonus: ${round.player1ToolBonus || 0}, P2 Tool Bonus: ${round.player2ToolBonus || 0}`);
       setShowToolBonus(false);
 
       // In debug mode, skip micro-delays to avoid excessive clicking
@@ -270,7 +290,7 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
     await delay(2000);
 
     // Roll dice - longer for excitement!
-    console.log(`Round ${currentRoundIndex + 1}: Rolling dice`);
+    console.log(`[PHASE 6] Round ${currentRoundIndex + 1}: ROLLING - Rolling dice`);
     setRoundState(prev => ({
       ...prev,
       phase: 'rolling',
@@ -280,7 +300,8 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
     await delay(3000); // Longer dice roll for suspense
 
     // Stop rolling and show values
-    console.log(`Round ${currentRoundIndex + 1}: Showing dice values`);
+    console.log(`[PHASE 7] Round ${currentRoundIndex + 1}: DICE-VALUES - Showing dice results`);
+    console.log(`  - P1 Roll: ${round.player1Roll}, P2 Roll: ${round.player2Roll}`);
     setRoundState(prev => ({
       ...prev,
       player1DiceRolling: false,
@@ -289,12 +310,10 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
     await delay(1500);
 
     // Show result
-    console.log(`Round ${currentRoundIndex + 1}: Showing result - winner: ${round.winner}`);
-    console.log('Critical hit data:', {
-      player1CriticalHit: round.player1CriticalHit,
-      player2CriticalHit: round.player2CriticalHit,
-      fullRound: round
-    });
+    console.log(`[PHASE 8] Round ${currentRoundIndex + 1}: RESULT - Showing winner: ${round.winner}`);
+    console.log(`  - P1 Total: ${round.player1Total} (${round.player1StatValue} + ${round.player1Roll})`);
+    console.log(`  - P2 Total: ${round.player2Total} (${round.player2StatValue} + ${round.player2Roll})`);
+    console.log(`  - Critical hits: P1=${round.player1CriticalHit}, P2=${round.player2CriticalHit}`);
     setRoundState(prev => ({ ...prev, phase: 'result', showResult: true }));
 
     // Announce critical hits first (only once if both players crit)
@@ -346,7 +365,7 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
       console.log(`Round ${currentRoundIndex + 1} complete, moving to round ${currentRoundIndex + 2}`);
       // Reset to intro phase BEFORE changing round to prevent flash
       setRoundState({
-        phase: 'intro',
+        phase: 'intro' as RoundState['phase'],
         player1DiceRolling: false,
         player2DiceRolling: false,
         showResult: false
@@ -683,9 +702,10 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          opacity: currentRound.player1ToolBonus ? 1 : 0.6,
-                          border: currentRound.player1ToolBonus ? '2px solid #00ff88' : '2px solid #666',
-                          transition: 'all 0.3s ease'
+                          opacity: (roundState.phase === 'cards' || roundState.phase === 'cards-flex') ? 0.4 : (isToolActiveForAbility(currentRound.player1ToolName, currentRound.ability) ? 1 : 0.4),
+                          border: (roundState.phase !== 'cards' && roundState.phase !== 'cards-flex' && isToolActiveForAbility(currentRound.player1ToolName, currentRound.ability)) ? '2px solid #00ff88' : '2px solid #666',
+                          transition: 'all 0.3s ease',
+                          filter: (roundState.phase === 'cards' || roundState.phase === 'cards-flex') ? 'grayscale(100%)' : (isToolActiveForAbility(currentRound.player1ToolName, currentRound.ability) ? 'none' : 'grayscale(100%)')
                         }}
                       >
                         <img
@@ -836,9 +856,10 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          opacity: currentRound.player2ToolBonus ? 1 : 0.6,
-                          border: currentRound.player2ToolBonus ? '2px solid #00ff88' : '2px solid #666',
-                          transition: 'all 0.3s ease'
+                          opacity: (roundState.phase === 'cards' || roundState.phase === 'cards-flex') ? 0.4 : (isToolActiveForAbility(currentRound.player2ToolName, currentRound.ability) ? 1 : 0.4),
+                          border: (roundState.phase !== 'cards' && roundState.phase !== 'cards-flex' && isToolActiveForAbility(currentRound.player2ToolName, currentRound.ability)) ? '2px solid #00ff88' : '2px solid #666',
+                          transition: 'all 0.3s ease',
+                          filter: (roundState.phase === 'cards' || roundState.phase === 'cards-flex') ? 'grayscale(100%)' : (isToolActiveForAbility(currentRound.player2ToolName, currentRound.ability) ? 'none' : 'grayscale(100%)')
                         }}
                       >
                         <img
