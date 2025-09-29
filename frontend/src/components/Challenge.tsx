@@ -103,6 +103,8 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
   };
 
   const handleCreateChallenge = () => {
+    // Clear any previous tool assignments
+    setAppliedTools(new Map());
     setView('select-opponent');
     loadAvailablePlayers();
   };
@@ -110,6 +112,8 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
   const handleChallengeAI = async () => {
     setSelectedOpponent({ id: 'ai', name: 'AI Opponent' });
     setLoading(true);
+    // Clear any previous tool assignments
+    setAppliedTools(new Map());
 
     try {
       // Create the AI challenge immediately to get the firstRoundAbility
@@ -134,6 +138,8 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
   const handleSelectOpponent = async (opponent: any) => {
     setSelectedOpponent(opponent);
     setLoading(true);
+    // Clear any previous tool assignments
+    setAppliedTools(new Map());
 
     try {
       // Create the challenge immediately to get the firstRoundAbility
