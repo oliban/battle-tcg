@@ -1,4 +1,4 @@
-import { Player, Card, Battle, Pack, Notification, Challenge, BattleRound } from '../models/types';
+import { Player, Card, Battle, Pack, Notification, Challenge, BattleRound, Tool, PlayerTool, BattleToolUsage } from '../models/types';
 import { gameDb } from './database';
 import { saveImageToDiskSync, deleteImageFromDisk } from '../utils/imageUtils';
 
@@ -34,7 +34,13 @@ class DbStore {
     };
 
     gameDb.queries.insertPlayer.run(player.id, player.name, player.coins, player.rating);
-    console.log('[DbStore] Created player:', player.id);
+
+    // Give starter tools to new player
+    this.givePlayerTool(player.id, 'running-shoes', 1);
+    this.givePlayerTool(player.id, 'sledge-hammer', 1);
+    this.givePlayerTool(player.id, 'tube-of-lotion', 1);
+
+    console.log('[DbStore] Created player with starter tools:', player.id);
     return player;
   }
 
@@ -58,12 +64,16 @@ class DbStore {
       pvp_losses: 0
     };
 
+    // Get player's tools
+    const tools = this.getPlayerTools(id);
+
     return {
       id: row.id,
       name: row.name,
       coins: row.coins,
       cards,
       deck,
+      tools,
       wins: stats.total_wins,
       losses: stats.total_losses,
       pvpWins: stats.pvp_wins,
@@ -289,7 +299,8 @@ class DbStore {
         battle.player1Name || null,
         battle.player2Name || null,
         battle.isSimulation ? 1 : 0,
-        battle.status
+        battle.status,
+        battle.firstRoundAbility || 'strength' // Default to strength for now
       );
     } catch (error) {
       console.error('[DbStore] Failed to insert battle:', error);
@@ -367,6 +378,7 @@ class DbStore {
       player1Name: row.player1_name,
       player2Name: row.player2_name,
       isSimulation: Boolean(row.is_simulation),
+      firstRoundAbility: row.first_round_ability || 'strength',
       player1Deck: [], // Would need to query from battle creation time
       player2Deck: [],
       player1Cards,
@@ -382,6 +394,12 @@ class DbStore {
         player2Roll: r.player2_roll,
         player1StatValue: r.player1_stat_value,
         player2StatValue: r.player2_stat_value,
+        player1BaseStatValue: r.player1_base_stat_value,
+        player2BaseStatValue: r.player2_base_stat_value,
+        player1ToolBonus: r.player1_tool_bonus,
+        player2ToolBonus: r.player2_tool_bonus,
+        player1ToolName: r.player1_tool_name,
+        player2ToolName: r.player2_tool_name,
         player1Total: r.player1_total,
         player2Total: r.player2_total,
         damageDealt: r.damage_dealt,
@@ -449,8 +467,11 @@ class DbStore {
           ability, player1_roll, player2_roll,
           player1_stat_value, player2_stat_value,
           player1_total, player2_total, damage_dealt, winner,
-          player1_critical_hit, player2_critical_hit
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          player1_critical_hit, player2_critical_hit,
+          player1_base_stat_value, player2_base_stat_value,
+          player1_tool_bonus, player2_tool_bonus,
+          player1_tool_name, player2_tool_name
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       newRounds.forEach((round: BattleRound) => {
@@ -463,7 +484,13 @@ class DbStore {
           round.player1Total, round.player2Total,
           round.damageDealt, round.winner,
           round.player1CriticalHit ? 1 : 0,
-          round.player2CriticalHit ? 1 : 0
+          round.player2CriticalHit ? 1 : 0,
+          round.player1BaseStatValue || null,
+          round.player2BaseStatValue || null,
+          round.player1ToolBonus || null,
+          round.player2ToolBonus || null,
+          round.player1ToolName || null,
+          round.player2ToolName || null
         );
       });
     }
@@ -485,6 +512,7 @@ class DbStore {
       challengedId: challenge.challengedId!,
       challengedName: challenge.challengedName!,
       status: challenge.status || 'pending',
+      firstRoundAbility: challenge.firstRoundAbility!,
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
     };
@@ -495,7 +523,8 @@ class DbStore {
       fullChallenge.challengerName,
       fullChallenge.challengedId,
       fullChallenge.challengedName,
-      fullChallenge.status
+      fullChallenge.status,
+      fullChallenge.firstRoundAbility
     );
 
     return fullChallenge;
@@ -532,10 +561,13 @@ class DbStore {
       challengedId: row.challenged_id,
       challengedName: row.challenged_name,
       status: row.status,
+      firstRoundAbility: row.first_round_ability,
       challengerCards: challengerCards.length > 0 ? challengerCards : undefined,
       challengerOrder: challengerOrder.length > 0 ? challengerOrder : undefined,
+      challengerTools: row.challenger_tools ? JSON.parse(row.challenger_tools) : undefined,
       challengedCards: challengedCards.length > 0 ? challengedCards : undefined,
       challengedOrder: challengedOrder.length > 0 ? challengedOrder : undefined,
+      challengedTools: row.challenged_tools ? JSON.parse(row.challenged_tools) : undefined,
       battleId: row.battle_id,
       createdAt: new Date(row.created_at),
       expiresAt: new Date(row.expires_at)
@@ -546,10 +578,24 @@ class DbStore {
     const challenge = this.getChallenge(id);
     if (!challenge) return undefined;
 
-    if (updates.status || updates.battleId) {
-      gameDb.queries.updateChallenge.run(
+    if (updates.status || updates.battleId || updates.challengerTools || updates.challengedTools) {
+      // Update challenge with status, battleId, and tools
+      const stmt = gameDb.connection.prepare(`
+        UPDATE challenges
+        SET status = ?,
+            battle_id = ?,
+            challenger_tools = CASE WHEN ? IS NOT NULL THEN ? ELSE challenger_tools END,
+            challenged_tools = CASE WHEN ? IS NOT NULL THEN ? ELSE challenged_tools END
+        WHERE id = ?
+      `);
+
+      stmt.run(
         updates.status ?? challenge.status,
         updates.battleId ?? challenge.battleId ?? null,
+        updates.challengerTools ? 1 : null,
+        updates.challengerTools ? JSON.stringify(updates.challengerTools) : null,
+        updates.challengedTools ? 1 : null,
+        updates.challengedTools ? JSON.stringify(updates.challengedTools) : null,
         id
       );
     }
@@ -945,6 +991,114 @@ class DbStore {
     }
 
     return grantedRewards;
+  }
+
+  // Tool-related methods
+  getAllTools(): Tool[] {
+    const rows = gameDb.connection.prepare('SELECT * FROM tools').all();
+    return rows.map((row: any) => this.rowToTool(row));
+  }
+
+  getTool(toolId: string): Tool | undefined {
+    const row = gameDb.connection.prepare('SELECT * FROM tools WHERE id = ?').get(toolId);
+    return row ? this.rowToTool(row) : undefined;
+  }
+
+  getPlayerTools(playerId: string): PlayerTool[] {
+    const rows = gameDb.connection.prepare(`
+      SELECT pt.*, t.* FROM player_tools pt
+      JOIN tools t ON pt.tool_id = t.id
+      WHERE pt.player_id = ?
+    `).all(playerId);
+
+    return rows.map((row: any) => ({
+      playerId: row.player_id,
+      toolId: row.tool_id,
+      quantity: row.quantity,
+      lastUsedBattleId: row.last_used_battle_id,
+      cooldownRemaining: row.cooldown_remaining,
+      acquiredAt: new Date(row.acquired_at),
+      tool: this.rowToTool(row)
+    }));
+  }
+
+  givePlayerTool(playerId: string, toolId: string, quantity: number = 1): boolean {
+    try {
+      const existing = gameDb.connection.prepare(
+        'SELECT * FROM player_tools WHERE player_id = ? AND tool_id = ?'
+      ).get(playerId, toolId);
+
+      if (existing) {
+        gameDb.connection.prepare(
+          'UPDATE player_tools SET quantity = quantity + ? WHERE player_id = ? AND tool_id = ?'
+        ).run(quantity, playerId, toolId);
+      } else {
+        gameDb.connection.prepare(
+          'INSERT INTO player_tools (player_id, tool_id, quantity) VALUES (?, ?, ?)'
+        ).run(playerId, toolId, quantity);
+      }
+      return true;
+    } catch (error) {
+      console.error('[DbStore] Failed to give tool to player:', error);
+      return false;
+    }
+  }
+
+  applyToolToBattle(battleId: string, playerId: string, toolId: string, cardId: string, cardPosition: number): boolean {
+    try {
+      gameDb.connection.prepare(`
+        INSERT INTO battle_tool_usage (battle_id, player_id, tool_id, card_id, card_position)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(battleId, playerId, toolId, cardId, cardPosition);
+      return true;
+    } catch (error) {
+      console.error('[DbStore] Failed to apply tool to battle:', error);
+      return false;
+    }
+  }
+
+  getBattleToolUsage(battleId: string): BattleToolUsage[] {
+    const rows = gameDb.connection.prepare(`
+      SELECT * FROM battle_tool_usage WHERE battle_id = ?
+    `).all(battleId);
+
+    return rows.map((row: any) => ({
+      battleId: row.battle_id,
+      playerId: row.player_id,
+      toolId: row.tool_id,
+      cardId: row.card_id,
+      cardPosition: row.card_position
+    }));
+  }
+
+  updateToolCooldown(playerId: string, toolId: string, battleId: string, cooldown: number): void {
+    gameDb.connection.prepare(`
+      UPDATE player_tools
+      SET last_used_battle_id = ?, cooldown_remaining = ?
+      WHERE player_id = ? AND tool_id = ?
+    `).run(battleId, cooldown, playerId, toolId);
+  }
+
+  decrementToolCooldowns(playerId: string): void {
+    gameDb.connection.prepare(`
+      UPDATE player_tools
+      SET cooldown_remaining = MAX(0, cooldown_remaining - 1)
+      WHERE player_id = ? AND cooldown_remaining > 0
+    `).run(playerId);
+  }
+
+  private rowToTool(row: any): Tool {
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      effectType: row.effect_type,
+      effectAbility: row.effect_ability,
+      effectValue: row.effect_value,
+      cooldown: row.cooldown,
+      restriction: row.restriction,
+      imageUrl: row.image_url
+    };
   }
 }
 

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { gameStore } from '../data/store';
 import { Battle, BattleRound, Card, Ability } from '../models/types';
+import { executeBattle } from '../services/battleExecutor';
 
 const router = Router();
 
@@ -216,196 +217,18 @@ router.post('/:battleId/execute', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Both players must set their card orders' });
     }
 
-  // Execute all 3 rounds
-  const rounds: BattleRound[] = [];
-  let player1TotalDamage = 0;
-  let player2TotalDamage = 0;
-  let player1Points = 0;
-  let player2Points = 0;
+    // Use the battleExecutor service which includes tool support
+    const completedBattle = executeBattle(battle);
 
-  for (let i = 0; i < 3; i++) {
-    const player1CardId = battle.player1Cards[battle.player1Order[i]];
-    const player2CardId = battle.player2Cards[battle.player2Order[i]];
+    // Include card details for display
+    const player1CardDetails = completedBattle.player1Cards.map(id => gameStore.getCard(id));
+    const player2CardDetails = completedBattle.player2Cards.map(id => gameStore.getCard(id));
 
-    const player1Card = gameStore.getCard(player1CardId);
-    const player2Card = gameStore.getCard(player2CardId);
-
-    if (!player1Card || !player2Card) {
-      return res.status(400).json({ error: `Card not found for round ${i + 1}` });
-    }
-
-    // Select random ability for this round
-    const ability = selectRandomAbility();
-
-    // Get stat values
-    const player1Stat = player1Card.abilities[ability];
-    const player2Stat = player2Card.abilities[ability];
-
-    // Roll D6 for each player
-    const player1Roll = rollD6();
-    const player2Roll = rollD6();
-
-    // Calculate totals
-    const player1Total = player1Stat + player1Roll;
-    const player2Total = player2Stat + player2Roll;
-
-    // Check for critical hits
-    const player1CritRoll = Math.random() * 100;
-    const player1CriticalHit = player1Card.criticalHitChance && player1CritRoll < player1Card.criticalHitChance;
-
-    const player2CritRoll = Math.random() * 100;
-    const player2CriticalHit = player2Card.criticalHitChance && player2CritRoll < player2Card.criticalHitChance;
-
-    // Log critical hit rolls
-    console.log(`[Round ${i + 1}] P1 Critical: ${player1Card.criticalHitChance || 0}% chance, rolled ${player1CritRoll.toFixed(2)}, hit: ${player1CriticalHit}`);
-    console.log(`[Round ${i + 1}] P2 Critical: ${player2Card.criticalHitChance || 0}% chance, rolled ${player2CritRoll.toFixed(2)}, hit: ${player2CriticalHit}`);
-
-    // Determine round winner
-    let roundWinner: 'player1' | 'player2' | 'draw';
-    let damageDealt = 0;
-
-    if (player1Total > player2Total) {
-      roundWinner = 'player1';
-      damageDealt = player1Total - player2Total;
-      // Double damage on critical hit
-      if (player1CriticalHit) {
-        damageDealt *= 2;
-      }
-      player1TotalDamage += damageDealt;
-      player1Points++;
-    } else if (player2Total > player1Total) {
-      roundWinner = 'player2';
-      damageDealt = player2Total - player1Total;
-      // Double damage on critical hit
-      if (player2CriticalHit) {
-        damageDealt *= 2;
-      }
-      player2TotalDamage += damageDealt;
-      player2Points++;
-    } else {
-      roundWinner = 'draw';
-      damageDealt = 0;
-    }
-
-    rounds.push({
-      roundNumber: i + 1,
-      player1CardId,
-      player2CardId,
-      player1CardName: player1Card.fullName || player1Card.name,
-      player2CardName: player2Card.fullName || player2Card.name,
-      ability,
-      player1Roll,
-      player2Roll,
-      player1StatValue: player1Stat,
-      player2StatValue: player2Stat,
-      player1Total,
-      player2Total,
-      player1CriticalHit: player1CriticalHit ? true : undefined,
-      player2CriticalHit: player2CriticalHit ? true : undefined,
-      damageDealt,
-      winner: roundWinner
+    res.json({
+      ...completedBattle,
+      player1CardDetails,
+      player2CardDetails
     });
-  }
-
-  // Determine overall winner
-  let winner: string | null;
-  let winReason: 'points' | 'damage' | 'coin-toss';
-
-  if (player1Points > player2Points) {
-    winner = battle.player1Id;
-    winReason = 'points';
-  } else if (player2Points > player1Points) {
-    winner = battle.player2Id || 'ai';  // Use 'ai' for display if player2Id is null
-    winReason = 'points';
-  } else {
-    // Points are tied, check damage
-    if (player1TotalDamage > player2TotalDamage) {
-      winner = battle.player1Id;
-      winReason = 'damage';
-    } else if (player2TotalDamage > player1TotalDamage) {
-      winner = battle.player2Id || 'ai';  // Use 'ai' for display if player2Id is null
-      winReason = 'damage';
-    } else {
-      // Damage is also tied, coin toss
-      winner = Math.random() < 0.5 ? battle.player1Id : (battle.player2Id || 'ai');
-      winReason = 'coin-toss';
-    }
-  }
-
-  // Update battle with results
-  const updatedBattle = gameStore.updateBattle(battleId, {
-    rounds,
-    currentRound: 3,
-    player1Points,
-    player2Points,
-    player1TotalDamage,
-    player2TotalDamage,
-    winner,
-    winReason,
-    status: 'completed',
-    completedAt: new Date()
-  });
-
-  // Update player statistics (only for real PvP battles)
-  if (!battle.isSimulation && battle.player2Id) {
-    const player1 = gameStore.getPlayer(battle.player1Id);
-    const player2 = gameStore.getPlayer(battle.player2Id);
-
-    if (player1) {
-      if (winner === battle.player1Id) {
-        gameStore.updatePlayer(battle.player1Id, {
-          wins: player1.wins + 1,
-          coins: player1.coins + 50 // Reward for winning
-        });
-      } else {
-        gameStore.updatePlayer(battle.player1Id, {
-          losses: player1.losses + 1
-        });
-      }
-    }
-
-    if (player2) {
-      if (winner === battle.player2Id) {
-        gameStore.updatePlayer(battle.player2Id, {
-          wins: player2.wins + 1,
-          coins: player2.coins + 50 // Reward for winning
-        });
-      } else {
-        gameStore.updatePlayer(battle.player2Id, {
-          losses: player2.losses + 1
-        });
-      }
-    }
-  } else {
-    // For simulation, only update player1's stats
-    const player1 = gameStore.getPlayer(battle.player1Id);
-    if (player1) {
-      if (winner === battle.player1Id) {
-        gameStore.updatePlayer(battle.player1Id, {
-          wins: player1.wins + 1,
-          coins: player1.coins + 30 // Smaller reward for simulation
-        });
-      } else {
-        gameStore.updatePlayer(battle.player1Id, {
-          losses: player1.losses + 1
-        });
-      }
-    }
-  }
-
-  if (!updatedBattle) {
-    return res.status(500).json({ error: 'Failed to update battle' });
-  }
-
-  // Include card details for display
-  const player1CardDetails = updatedBattle.player1Cards.map(id => gameStore.getCard(id));
-  const player2CardDetails = updatedBattle.player2Cards.map(id => gameStore.getCard(id));
-
-  res.json({
-    ...updatedBattle,
-    player1CardDetails,
-    player2CardDetails
-  });
   } catch (error) {
     console.error('[Battle Execute] Error:', error);
     res.status(500).json({ error: 'Failed to execute battle: ' + (error as any).message });

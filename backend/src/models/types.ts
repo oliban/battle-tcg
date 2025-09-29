@@ -35,6 +35,7 @@ export interface Player {
   coins: number;
   cards: string[];
   deck: string[];
+  tools?: PlayerTool[]; // Player's available tools
   wins: number; // Total wins (AI + PvP)
   losses: number; // Total losses (AI + PvP)
   pvpWins?: number; // PvP wins only
@@ -61,6 +62,38 @@ export interface PlayerReward {
   source: 'initial' | 'battle_win' | 'achievement' | 'purchase';
 }
 
+export type ToolEffectType = 'stat_boost' | 'reveal_cards' | 'any_stat_boost';
+export type ToolRestriction = 'challenger' | 'challengee' | null;
+
+export interface Tool {
+  id: string;
+  name: string;
+  description: string;
+  effectType: ToolEffectType;
+  effectAbility?: Ability | 'any'; // Which ability it affects
+  effectValue?: number; // How much it boosts (e.g., +2)
+  cooldown: number; // Number of battles before it can be used again
+  restriction?: ToolRestriction; // Who can use this tool
+  imageUrl?: string;
+}
+
+export interface PlayerTool {
+  playerId: string;
+  toolId: string;
+  quantity: number;
+  lastUsedBattleId?: string;
+  cooldownRemaining: number;
+  acquiredAt: Date;
+}
+
+export interface BattleToolUsage {
+  battleId: string;
+  playerId: string;
+  toolId: string;
+  cardId: string;
+  cardPosition: number; // 0-2
+}
+
 export interface Battle {
   id: string;
   player1Id: string;
@@ -74,15 +107,19 @@ export interface Battle {
   player2Cards: string[]; // 3 randomly selected cards for battle
   player1Order?: number[]; // Order indices [0,1,2] in desired play order
   player2Order?: number[]; // Order indices [0,1,2] in desired play order
+  firstRoundAbility?: Ability; // The ability that will be used in round 1
+  player1ToolUsage?: BattleToolUsage[]; // Tools applied by player 1
+  player2ToolUsage?: BattleToolUsage[]; // Tools applied by player 2
   rounds: BattleRound[];
   currentRound: number;
   player1Points: number;
   player2Points: number;
   player1TotalDamage: number; // For tiebreaker
   player2TotalDamage: number; // For tiebreaker
-  winner?: string;
+  winner?: string | null;
   winReason?: 'points' | 'damage' | 'coin-toss';
   status: 'waiting-for-selection' | 'waiting-for-order' | 'ready' | 'in-progress' | 'completed';
+  toolUsages?: BattleToolUsage[];
   createdAt: Date;
   completedAt?: Date;
 }
@@ -96,8 +133,14 @@ export interface BattleRound {
   ability: Ability;
   player1Roll: number;
   player2Roll: number;
-  player1StatValue: number; // Card's stat value for the chosen ability
-  player2StatValue: number; // Card's stat value for the chosen ability
+  player1StatValue: number; // Card's stat value for the chosen ability (including tool bonus)
+  player2StatValue: number; // Card's stat value for the chosen ability (including tool bonus)
+  player1BaseStatValue?: number; // Base stat value before tool bonus
+  player2BaseStatValue?: number; // Base stat value before tool bonus
+  player1ToolBonus?: number; // Tool bonus applied
+  player2ToolBonus?: number; // Tool bonus applied
+  player1ToolName?: string; // Name of tool applied
+  player2ToolName?: string; // Name of tool applied
   player1Total: number; // Stat + roll
   player2Total: number; // Stat + roll
   player1CriticalHit?: boolean; // Whether player1 landed a critical hit
@@ -144,10 +187,13 @@ export interface Challenge {
   status: 'pending' | 'accepted' | 'declined' | 'expired' | 'ready' | 'completed';
   challengerCards?: string[];
   challengerOrder?: number[];
+  challengerTools?: { [position: number]: string }; // Tools assigned by challenger
   challengedCards?: string[];
   challengedOrder?: number[];
+  challengedTools?: { [position: number]: string }; // Tools assigned by defender
   battleId?: string;
   isAI?: boolean; // Flag to indicate if this is an AI challenge
+  firstRoundAbility: Ability; // The ability that will be used in round 1
   createdAt: Date;
   expiresAt: Date;
 }

@@ -43,6 +43,13 @@ export interface Player {
   lastActive?: string;
 }
 
+export interface BattleToolUsage {
+  playerId: string;
+  toolId: string;
+  cardId: string;
+  cardPosition: number;
+}
+
 export interface Battle {
   id: string;
   player1Id: string;
@@ -65,6 +72,8 @@ export interface Battle {
   winner?: string;
   winReason?: 'points' | 'damage' | 'coin-toss';
   status: 'waiting-for-selection' | 'waiting-for-order' | 'ready' | 'in-progress' | 'completed';
+  toolUsages?: BattleToolUsage[];
+  firstRoundAbility?: Ability;
   createdAt: string;
   completedAt?: string;
   player1CardDetails?: Card[];
@@ -80,8 +89,14 @@ export interface BattleRound {
   ability: Ability;
   player1Roll: number;
   player2Roll: number;
-  player1StatValue: number;
-  player2StatValue: number;
+  player1StatValue: number;  // Total stat (base + tool)
+  player2StatValue: number;  // Total stat (base + tool)
+  player1BaseStatValue?: number; // Base stat before tools
+  player2BaseStatValue?: number; // Base stat before tools
+  player1ToolBonus?: number; // Tool bonus applied
+  player2ToolBonus?: number; // Tool bonus applied
+  player1ToolName?: string; // Name of tool applied
+  player2ToolName?: string; // Name of tool applied
   player1Total: number;
   player2Total: number;
   player1CriticalHit?: boolean; // Whether player1 landed a critical hit
@@ -132,6 +147,8 @@ export interface Challenge {
   challengedCards?: string[];
   challengedOrder?: number[];
   battleId?: string;
+  isAI?: boolean;
+  firstRoundAbility: Ability;
   createdAt: string;
   expiresAt: string;
 }

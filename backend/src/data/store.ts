@@ -1,4 +1,4 @@
-import { Player, Card, Battle, Pack, Notification, Challenge } from '../models/types';
+import { Player, Card, Battle, Pack, Notification, Challenge, Tool, PlayerTool } from '../models/types';
 import { dbStore } from './dbStore';
 
 // GameStore now delegates all operations to the database-backed store
@@ -140,6 +140,23 @@ class GameStore {
 
   getLeaderboard(limit: number = 50): Player[] {
     return dbStore.getLeaderboard(limit);
+  }
+
+  // Tool methods
+  getAllTools(): Tool[] {
+    return dbStore.getAllTools();
+  }
+
+  getPlayerTools(playerId: string): PlayerTool[] {
+    return dbStore.getPlayerTools(playerId);
+  }
+
+  givePlayerTool(playerId: string, toolId: string, quantity: number = 1): boolean {
+    return dbStore.givePlayerTool(playerId, toolId, quantity);
+  }
+
+  applyToolToBattle(battleId: string, playerId: string, toolId: string, cardId: string, cardPosition: number): boolean {
+    return dbStore.applyToolToBattle(battleId, playerId, toolId, cardId, cardPosition);
   }
 }
 

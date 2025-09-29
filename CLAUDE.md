@@ -18,6 +18,12 @@ This is a new project with no existing codebase. When implementing features:
 
 Commands will be added as the project is built and dependencies are installed.
 
+## Database
+
+The SQLite database file is located at `/backend/game.db`. This is the ONLY database file used by the application.
+- All database operations go through `/backend/src/data/database.ts` and `/backend/src/data/dbStore.ts`
+- Database backups are created with timestamp suffix (e.g. `game.db.backup.TIMESTAMP`)
+
 ## Architecture
 
 Architecture details will be documented as the project structure is established.

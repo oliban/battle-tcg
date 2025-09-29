@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { challengeAPI, cardAPI, battleAPI } from '../services/api';
+import { toolsAPI, PlayerTool } from '../api/tools';
 import { Player, Card, Challenge as ChallengeType, Battle } from '../types';
 import CardComponent from './Card';
 import BattleAnimation from './BattleAnimation';
@@ -27,6 +28,7 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
   const [myChallenges, setMyChallenges] = useState<ChallengeType[]>([]);
   const [selectedOpponent, setSelectedOpponent] = useState<any>(null);
   const [selectedChallenge, setSelectedChallenge] = useState<ChallengeType | null>(null);
+  const [currentChallenge, setCurrentChallenge] = useState<ChallengeType | null>(null);
   const [selectedCards, setSelectedCards] = useState<string[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<number[]>([]);
   const [playerCards, setPlayerCards] = useState<Card[]>([]);
@@ -37,8 +39,12 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
   const [completedBattle, setCompletedBattle] = useState<Battle | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [battleResults, setBattleResults] = useState<Map<string, Battle>>(new Map());
+  const [playerTools, setPlayerTools] = useState<PlayerTool[]>([]);
+  const [appliedTools, setAppliedTools] = useState<Map<number, string>>(new Map()); // cardIndex -> toolId
+  const [draggedTool, setDraggedTool] = useState<string | null>(null);
+  const [dragOverCard, setDragOverCard] = useState<number | null>(null);
 
-  // Load player's cards
+  // Load player's cards and tools
   useEffect(() => {
     const loadCards = async () => {
       try {
@@ -50,7 +56,19 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
       }
     };
 
+    const loadTools = async () => {
+      try {
+        console.log('[Challenge] Loading tools for player:', player.id, player.name);
+        const tools = await toolsAPI.getPlayerTools(player.id);
+        console.log('[Challenge] Tools loaded:', tools);
+        setPlayerTools(tools);
+      } catch (err) {
+        console.error('Failed to load tools:', err);
+      }
+    };
+
     loadCards();
+    loadTools();
   }, [player]);
 
   // Load challenges
@@ -89,27 +107,52 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
     loadAvailablePlayers();
   };
 
-  const handleChallengeAI = () => {
-    // For AI challenges, go directly to card selection
+  const handleChallengeAI = async () => {
     setSelectedOpponent({ id: 'ai', name: 'AI Opponent' });
-    setView('select-cards');
-    // Get 3 random cards from the deck for the challenge
-    const deckCards = playerCards.filter(c => player.deck.includes(c.id));
-    const shuffled = [...deckCards].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 3).map(c => c.id);
-    setSelectedCards(selected);
-    setSelectedOrder([]);
+    setLoading(true);
+
+    try {
+      // Create the AI challenge immediately to get the firstRoundAbility
+      const challenge = await challengeAPI.createAIChallenge(player.id);
+      setCurrentChallenge(challenge);
+
+      // Get 3 random cards from the deck for the challenge
+      const deckCards = playerCards.filter(c => player.deck.includes(c.id));
+      const shuffled = [...deckCards].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, 3).map(c => c.id);
+      setSelectedCards(selected);
+      setSelectedOrder([]);
+
+      setView('select-cards');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to create AI challenge');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSelectOpponent = (opponent: any) => {
+  const handleSelectOpponent = async (opponent: any) => {
     setSelectedOpponent(opponent);
-    setView('select-cards');
-    // Get 3 random cards from the deck for the challenge
-    const deckCards = playerCards.filter(c => player.deck.includes(c.id));
-    const shuffled = [...deckCards].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 3).map(c => c.id);
-    setSelectedCards(selected);
-    setSelectedOrder([]);
+    setLoading(true);
+
+    try {
+      // Create the challenge immediately to get the firstRoundAbility
+      const challenge = await challengeAPI.createChallenge(player.id, opponent.id);
+      setCurrentChallenge(challenge);
+
+      // Get 3 random cards from the deck for the challenge
+      const deckCards = playerCards.filter(c => player.deck.includes(c.id));
+      const shuffled = [...deckCards].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, 3).map(c => c.id);
+      setSelectedCards(selected);
+      setSelectedOrder([]);
+
+      setView('select-cards');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to create challenge');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCardSelect = (index: number) => {
@@ -138,11 +181,20 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
     try {
       if (selectedOpponent.id === 'ai') {
-        // For AI challenges, use special endpoint
-        const challenge = await challengeAPI.createAIChallenge(player.id);
+        // For AI challenges, use the pre-created challenge
+        if (!currentChallenge) {
+          setError('No challenge found');
+          return;
+        }
+
+        // Convert applied tools Map to object format for API
+        const toolsObj: { [key: number]: string } = {};
+        appliedTools.forEach((toolId, position) => {
+          toolsObj[position] = toolId;
+        });
 
         // Set up the cards and order, which will automatically trigger the battle
-        const result = await challengeAPI.setupChallenge(challenge.id, selectedCards, selectedOrder);
+        const result = await challengeAPI.setupChallenge(currentChallenge.id, selectedCards, selectedOrder, toolsObj);
 
         // Navigate to battle view immediately
         if ('battle' in result && result.battle && result.battle.id) {
@@ -155,11 +207,20 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
           loadChallenges();
         }
       } else {
-        // Regular PvP challenge
-        const challenge = await challengeAPI.createChallenge(player.id, selectedOpponent.id);
+        // Regular PvP challenge - use the pre-created challenge
+        if (!currentChallenge) {
+          setError('No challenge found');
+          return;
+        }
+
+        // Convert applied tools Map to object format for API
+        const toolsObj: { [key: number]: string } = {};
+        appliedTools.forEach((toolId, position) => {
+          toolsObj[position] = toolId;
+        });
 
         // Set up the cards and order
-        await challengeAPI.setupChallenge(challenge.id, selectedCards, selectedOrder);
+        await challengeAPI.setupChallenge(currentChallenge.id, selectedCards, selectedOrder, toolsObj);
 
         // Return to challenge list for PvP challenges
         setView('list');
@@ -311,10 +372,17 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
     setError('');
 
     try {
+      // Convert applied tools Map to object format for API
+      const toolsObj: { [key: number]: string } = {};
+      appliedTools.forEach((toolId, position) => {
+        toolsObj[position] = toolId;
+      });
+
       const result = await challengeAPI.setupDefense(
         selectedChallenge.id,
         selectedCards,
-        selectedOrder
+        selectedOrder,
+        toolsObj
       );
 
       // Navigate to battle view
@@ -544,8 +612,69 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
     </div>
   );
 
+  const handleToolDragStart = (toolId: string) => {
+    setDraggedTool(toolId);
+  };
+
+  const handleToolDragEnd = () => {
+    setDraggedTool(null);
+    setDragOverCard(null);
+  };
+
+  const handleCardDrop = (e: React.DragEvent, cardIndex: number) => {
+    e.preventDefault();
+    if (draggedTool) {
+      const newAppliedTools = new Map(appliedTools);
+
+      // Check if this card already has a tool (to make it available again)
+      const existingTool = newAppliedTools.get(cardIndex);
+
+      // Remove the dragged tool from any other card it was applied to
+      newAppliedTools.forEach((tool, idx) => {
+        if (tool === draggedTool) {
+          newAppliedTools.delete(idx);
+        }
+      });
+
+      // Apply the new tool to this card
+      newAppliedTools.set(cardIndex, draggedTool);
+
+      setAppliedTools(newAppliedTools);
+      setDraggedTool(null);
+      setDragOverCard(null);
+    }
+  };
+
+  const handleCardDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleCardDragEnter = (cardIndex: number) => {
+    if (draggedTool) {
+      setDragOverCard(cardIndex);
+    }
+  };
+
+  const handleCardDragLeave = () => {
+    setDragOverCard(null);
+  };
+
+  const getToolEffect = (toolId: string) => {
+    const tool = playerTools.find(pt => pt.toolId === toolId);
+    if (!tool?.tool) return '';
+
+    switch (tool.tool.effectAbility) {
+      case 'strength': return '+2 STR';
+      case 'speed': return '+2 SPD';
+      case 'agility': return '+2 AGI';
+      case 'any': return '+2 ANY';
+      default: return '';
+    }
+  };
+
   const renderCardSelection = () => {
     const battleCards = selectedCards.map(id => playerCards.find(c => c.id === id)!).filter(Boolean);
+    const availableTools = playerTools.filter(pt => pt.cooldownRemaining === 0);
 
     return (
       <div className="card-selection">
@@ -558,18 +687,81 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
         {error && <div className="error-message">{error}</div>}
 
+        {/* First Round Ability Display */}
+        <div className="first-round-info">
+          <h4>First Round Ability: <span className="ability-highlight">{getAbilityIcon(currentChallenge?.firstRoundAbility || '')} {currentChallenge?.firstRoundAbility?.toUpperCase()}</span></h4>
+          <p>The first round will be fought using the {currentChallenge?.firstRoundAbility} ability!</p>
+        </div>
+
+        {/* Tools Section */}
+        <div className="tools-section">
+          <h3>Available Tools (Drag to apply)</h3>
+          <div className="tools-container">
+            {availableTools.map(pt => (
+              <div
+                key={pt.toolId}
+                className="tool-item"
+                draggable
+                onDragStart={() => handleToolDragStart(pt.toolId)}
+                onDragEnd={handleToolDragEnd}
+                style={{
+                  opacity: Array.from(appliedTools.values()).includes(pt.toolId) ? 0.5 : 1,
+                  cursor: 'grab'
+                }}
+              >
+                {pt.tool?.imageUrl && (
+                  <img
+                    src={pt.tool.imageUrl}
+                    alt={pt.tool.name}
+                    className="tool-image"
+                  />
+                )}
+                <div className="tool-info">
+                  <div className="tool-name">{pt.tool?.name}</div>
+                  <div className="tool-effect">{getToolEffect(pt.toolId)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <h3 className="card-selection-info">Select the order to play your cards (click cards in order)</h3>
         <div className="battle-cards">
           {battleCards.map((card, index) => {
             const orderPosition = selectedOrder.indexOf(index);
+            const appliedTool = appliedTools.get(index);
             return (
               <div
                 key={card.id}
-                className={`battle-card-wrapper ${orderPosition !== -1 ? 'selected' : ''}`}
+                className={`battle-card-wrapper ${orderPosition !== -1 ? 'selected' : ''} ${dragOverCard === index ? 'can-drop' : ''}`}
                 onClick={() => handleCardSelect(index)}
+                onDrop={(e) => handleCardDrop(e, index)}
+                onDragOver={handleCardDragOver}
+                onDragEnter={() => handleCardDragEnter(index)}
+                onDragLeave={handleCardDragLeave}
               >
                 {orderPosition !== -1 && (
                   <div className="order-badge">{orderPosition + 1}</div>
+                )}
+                {appliedTool && (
+                  <div className="applied-tools">
+                    <div className="tool-badge">
+                      {(() => {
+                        const tool = availableTools.find(pt => pt.toolId === appliedTool)?.tool;
+                        if (tool?.imageUrl) {
+                          return (
+                            <img
+                              src={tool.imageUrl}
+                              alt={tool.name}
+                              className="tool-badge-image"
+                              title={getToolEffect(appliedTool)}
+                            />
+                          );
+                        }
+                        return <span className="tool-effect">{getToolEffect(appliedTool)}</span>;
+                      })()}
+                    </div>
+                  </div>
                 )}
                 <CardComponent card={card} onClick={() => {}} />
               </div>
@@ -644,6 +836,11 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
   const renderDefenseSetup = () => {
     const battleCards = selectedCards.map(id => playerCards.find(c => c.id === id)!).filter(Boolean);
+    const availableTools = playerTools.filter(pt => pt.cooldownRemaining === 0);
+
+    console.log('[Defense Setup] Current player:', player);
+    console.log('[Defense Setup] playerTools:', playerTools);
+    console.log('[Defense Setup] availableTools:', availableTools);
 
     return (
       <div className="defense-setup">
@@ -656,20 +853,82 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
         {error && <div className="error-message">{error}</div>}
 
+        {/* First Round Ability Display */}
+        <div className="first-round-info">
+          <h4>First Round Ability: <span className="ability-highlight">{getAbilityIcon(selectedChallenge?.firstRoundAbility || '')} {selectedChallenge?.firstRoundAbility?.toUpperCase()}</span></h4>
+          <p>The first round will be fought using the {selectedChallenge?.firstRoundAbility} ability!</p>
+        </div>
+
+        {/* Tools Section */}
+        <div className="tools-section">
+          <h3>Available Tools (Drag to apply)</h3>
+          <div className="tools-container">
+            {availableTools.map(pt => (
+              <div
+                key={pt.toolId}
+                className="tool-item"
+                draggable
+                onDragStart={() => handleToolDragStart(pt.toolId)}
+                onDragEnd={handleToolDragEnd}
+                style={{
+                  opacity: Array.from(appliedTools.values()).includes(pt.toolId) ? 0.5 : 1,
+                }}
+              >
+                {pt.tool?.imageUrl && (
+                  <img
+                    src={pt.tool.imageUrl}
+                    alt={pt.tool.name}
+                    className="tool-image"
+                  />
+                )}
+                <div className="tool-info">
+                  <div className="tool-name">{pt.tool?.name}</div>
+                  <div className="tool-effect">{getToolEffect(pt.toolId)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <h3 className="card-selection-info">Select the order to play your cards (click cards in order)</h3>
         <div className="battle-cards">
           {battleCards.map((card, index) => {
             const orderPosition = selectedOrder.indexOf(index);
+            const appliedTool = appliedTools.get(index);
             return (
               <div
                 key={card.id}
                 className={`battle-card-wrapper ${orderPosition !== -1 ? 'selected' : ''}`}
                 onClick={() => handleCardSelect(index)}
+                onDrop={(e) => handleCardDrop(e, index)}
+                onDragOver={handleCardDragOver}
+                onDragEnter={() => handleCardDragEnter(index)}
+                onDragLeave={handleCardDragLeave}
               >
                 {orderPosition !== -1 && (
                   <div className="order-badge">{orderPosition + 1}</div>
                 )}
                 <CardComponent card={card} onClick={() => {}} />
+                {appliedTool && (
+                  <div className="applied-tools">
+                    <div className="tool-badge">
+                      {(() => {
+                        const tool = availableTools.find(pt => pt.toolId === appliedTool)?.tool;
+                        if (tool?.imageUrl) {
+                          return (
+                            <img
+                              src={tool.imageUrl}
+                              alt={tool.name}
+                              className="tool-badge-image"
+                              title={getToolEffect(appliedTool)}
+                            />
+                          );
+                        }
+                        return <span className="tool-effect">{getToolEffect(appliedTool)}</span>;
+                      })()}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -795,15 +1054,21 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
                   <div className="stats-list">
                     <div className="stat-line">
                       <span className="stat-label">{round.ability.charAt(0).toUpperCase() + round.ability.slice(1)}:</span>
-                      <span className="stat-value">{round.player1StatValue}</span>
+                      <span className="stat-value">{round.player1BaseStatValue || round.player1StatValue}</span>
                     </div>
+                    {round.player1ToolBonus && round.player1ToolBonus > 0 && (
+                      <div className="stat-line">
+                        <span className="stat-label">Tool:</span>
+                        <span className="stat-value" style={{ color: 'red' }}>{round.player1ToolBonus}</span>
+                      </div>
+                    )}
                     <div className="stat-line">
-                      <span className="stat-label">Dice roll:</span>
+                      <span className="stat-label">Roll:</span>
                       <span className="stat-value">{round.player1Roll}</span>
                     </div>
                     {round.player1CriticalHit && (
                       <div className="stat-line critical">
-                        <span className="stat-label">Critical:</span>
+                        <span className="stat-label">Critical hit:</span>
                         <span className="stat-value">{round.player1Roll}</span>
                       </div>
                     )}
@@ -836,15 +1101,21 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
                   <div className="stats-list">
                     <div className="stat-line">
                       <span className="stat-label">{round.ability.charAt(0).toUpperCase() + round.ability.slice(1)}:</span>
-                      <span className="stat-value">{round.player2StatValue}</span>
+                      <span className="stat-value">{round.player2BaseStatValue || round.player2StatValue}</span>
                     </div>
+                    {round.player2ToolBonus && round.player2ToolBonus > 0 && (
+                      <div className="stat-line">
+                        <span className="stat-label">Tool:</span>
+                        <span className="stat-value" style={{ color: 'red' }}>{round.player2ToolBonus}</span>
+                      </div>
+                    )}
                     <div className="stat-line">
-                      <span className="stat-label">Dice roll:</span>
+                      <span className="stat-label">Roll:</span>
                       <span className="stat-value">{round.player2Roll}</span>
                     </div>
                     {round.player2CriticalHit && (
                       <div className="stat-line critical">
-                        <span className="stat-label">Critical:</span>
+                        <span className="stat-label">Critical hit:</span>
                         <span className="stat-value">{round.player2Roll}</span>
                       </div>
                     )}

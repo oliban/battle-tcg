@@ -1,4 +1,4 @@
-import { Battle, BattleRound, Card, Ability } from '../models/types';
+import { Battle, BattleRound, Card, Ability, BattleToolUsage } from '../models/types';
 import { gameStore } from '../data/store';
 
 // Helper function to roll a D6
@@ -20,6 +20,30 @@ export function executeBattle(battle: Battle): Battle {
     throw new Error('Both players must set their card orders');
   }
 
+  // Get tool usage for this battle
+  const toolUsages: BattleToolUsage[] = battle.toolUsages || [];
+  console.log(`[Battle Executor] Tool usages for battle ${battle.id}:`, toolUsages);
+
+  // Create maps for easy lookup of tool effects by card position
+  const player1ToolEffects = new Map<number, { ability: string, value: number, name: string }>();
+  const player2ToolEffects = new Map<number, { ability: string, value: number, name: string }>();
+
+  toolUsages.forEach(usage => {
+    const tool = gameStore.getAllTools().find(t => t.id === usage.toolId);
+    if (!tool) return;
+
+    // Determine which player this tool belongs to
+    // If usage.playerId matches battle.player1Id, it's player1's tool, otherwise it's player2's tool (including AI)
+    const effectMap = usage.playerId === battle.player1Id ? player1ToolEffects : player2ToolEffects;
+
+    if (tool.effectType === 'stat_boost' && tool.effectAbility && tool.effectAbility !== 'any') {
+      effectMap.set(usage.cardPosition, { ability: tool.effectAbility, value: tool.effectValue || 0, name: tool.name });
+    } else if (tool.effectType === 'any_stat_boost') {
+      // For spear, we need to apply it to any stat - for now apply to all stats
+      effectMap.set(usage.cardPosition, { ability: 'any', value: tool.effectValue || 0, name: tool.name });
+    }
+  });
+
   // Execute all 3 rounds
   const rounds: BattleRound[] = [];
   let player1TotalDamage = 0;
@@ -38,12 +62,54 @@ export function executeBattle(battle: Battle): Battle {
       throw new Error(`Card not found for round ${i + 1}`);
     }
 
-    // Select random ability for this round
-    const ability = selectRandomAbility();
+    // Select ability for this round - use firstRoundAbility for round 1, random for others
+    let ability: Ability;
+    if (i === 0 && battle.firstRoundAbility) {
+      ability = battle.firstRoundAbility;
+      console.log(`[Round ${i + 1}] Using predetermined first round ability: ${battle.firstRoundAbility}`);
+    } else {
+      ability = selectRandomAbility();
+      console.log(`[Round ${i + 1}] Using random ability: ${ability}`);
+    }
 
-    // Get stat values
-    const player1Stat = player1Card.abilities[ability];
-    const player2Stat = player2Card.abilities[ability];
+    // Get base stat values
+    const player1BaseStat = player1Card.abilities[ability];
+    const player2BaseStat = player2Card.abilities[ability];
+
+    // Track tool bonuses separately
+    let player1ToolBonus = 0;
+    let player2ToolBonus = 0;
+    let player1ToolName: string | undefined;
+    let player2ToolName: string | undefined;
+
+    // Check for equipped tools (always set the name if tool exists)
+    const p1ToolEffect = player1ToolEffects.get(battle.player1Order[i]);
+    if (p1ToolEffect) {
+      player1ToolName = p1ToolEffect.name; // Always set the name
+      // Only apply bonus if it matches the ability
+      if (p1ToolEffect.ability === ability || p1ToolEffect.ability === 'any') {
+        player1ToolBonus = p1ToolEffect.value;
+        console.log(`[Round ${i + 1}] Applied tool boost +${p1ToolEffect.value} to P1 ${ability}, new value: ${player1BaseStat + player1ToolBonus}`);
+      } else {
+        console.log(`[Round ${i + 1}] P1 has ${p1ToolEffect.name} equipped but it doesn't apply to ${ability}`);
+      }
+    }
+
+    const p2ToolEffect = player2ToolEffects.get(battle.player2Order[i]);
+    if (p2ToolEffect) {
+      player2ToolName = p2ToolEffect.name; // Always set the name
+      // Only apply bonus if it matches the ability
+      if (p2ToolEffect.ability === ability || p2ToolEffect.ability === 'any') {
+        player2ToolBonus = p2ToolEffect.value;
+        console.log(`[Round ${i + 1}] Applied tool boost +${p2ToolEffect.value} to P2 ${ability}, new value: ${player2BaseStat + player2ToolBonus}`);
+      } else {
+        console.log(`[Round ${i + 1}] P2 has ${p2ToolEffect.name} equipped but it doesn't apply to ${ability}`);
+      }
+    }
+
+    // Calculate final stat values with tool bonuses
+    const player1Stat = player1BaseStat + player1ToolBonus;
+    const player2Stat = player2BaseStat + player2ToolBonus;
 
     // Debug log to check actual values
     console.log(`[Round ${i + 1}] ${ability}: P1 card ${player1Card.fullName || player1Card.name} stat = ${player1Stat}, P2 card ${player2Card.fullName || player2Card.name} stat = ${player2Stat}`);
@@ -111,8 +177,14 @@ export function executeBattle(battle: Battle): Battle {
       ability,
       player1Roll: player1BaseRoll,  // Store original dice roll
       player2Roll: player2BaseRoll,  // Store original dice roll
-      player1StatValue: player1Stat,
-      player2StatValue: player2Stat,
+      player1StatValue: player1Stat,  // Total stat value (base + tool)
+      player2StatValue: player2Stat,  // Total stat value (base + tool)
+      player1BaseStatValue: player1BaseStat,  // Base stat before tools
+      player2BaseStatValue: player2BaseStat,  // Base stat before tools
+      player1ToolBonus: player1ToolBonus || undefined,
+      player2ToolBonus: player2ToolBonus || undefined,
+      player1ToolName: player1ToolName,
+      player2ToolName: player2ToolName,
       player1Total,
       player2Total,
       player1CriticalHit: player1CriticalHit || false,
@@ -130,7 +202,7 @@ export function executeBattle(battle: Battle): Battle {
     winner = battle.player1Id;
     winReason = 'points';
   } else if (player2Points > player1Points) {
-    winner = battle.player2Id || 'ai';  // Use 'ai' for display if player2Id is null
+    winner = battle.player2Id;  // Will be null for simulations, which is valid
     winReason = 'points';
   } else {
     // Points are tied, check damage
@@ -138,11 +210,11 @@ export function executeBattle(battle: Battle): Battle {
       winner = battle.player1Id;
       winReason = 'damage';
     } else if (player2TotalDamage > player1TotalDamage) {
-      winner = battle.player2Id || 'ai';  // Use 'ai' for display if player2Id is null
+      winner = battle.player2Id;  // Will be null for simulations, which is valid
       winReason = 'damage';
     } else {
       // Damage is also tied, coin toss
-      winner = Math.random() < 0.5 ? battle.player1Id : (battle.player2Id || 'ai');
+      winner = Math.random() < 0.5 ? battle.player1Id : battle.player2Id;
       winReason = 'coin-toss';
     }
   }

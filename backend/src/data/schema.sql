@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS battles (
     winner_id TEXT REFERENCES players(id),
     win_reason TEXT CHECK (win_reason IN ('points', 'damage', 'coin-toss')),
     status TEXT CHECK (status IN ('waiting-for-selection', 'waiting-for-order', 'ready', 'in-progress', 'completed')) NOT NULL,
+    first_round_ability TEXT CHECK (first_round_ability IN ('strength', 'speed', 'agility', NULL)),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     completed_at DATETIME
 );
@@ -93,7 +94,9 @@ CREATE TABLE IF NOT EXISTS battle_rounds (
     player1_total INTEGER NOT NULL,
     player2_total INTEGER NOT NULL,
     damage_dealt INTEGER NOT NULL,
-    winner TEXT CHECK (winner IN ('player1', 'player2', 'draw')) NOT NULL
+    winner TEXT CHECK (winner IN ('player1', 'player2', 'draw')) NOT NULL,
+    player1_critical_hit INTEGER DEFAULT 0,
+    player2_critical_hit INTEGER DEFAULT 0
 );
 
 -- Challenges table
@@ -104,6 +107,9 @@ CREATE TABLE IF NOT EXISTS challenges (
     challenged_id TEXT, -- Can be NULL for AI challenges
     challenged_name TEXT NOT NULL,
     status TEXT CHECK (status IN ('pending', 'accepted', 'declined', 'expired', 'ready', 'completed')) NOT NULL,
+    first_round_ability TEXT CHECK (first_round_ability IN ('strength', 'speed', 'agility')) NOT NULL,
+    challenger_tools TEXT, -- JSON object storing challenger's tool assignments
+    challenged_tools TEXT, -- JSON object storing challenged player's tool assignments
     battle_id TEXT REFERENCES battles(id),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     expires_at DATETIME NOT NULL
@@ -151,6 +157,42 @@ CREATE TABLE IF NOT EXISTS player_rewards (
     unlocked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     equipped BOOLEAN DEFAULT FALSE,
     PRIMARY KEY (player_id, reward_id)
+);
+
+-- Tools table - defines available tools in the game
+CREATE TABLE IF NOT EXISTS tools (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    effect_type TEXT CHECK (effect_type IN ('stat_boost', 'reveal_cards', 'any_stat_boost')) NOT NULL,
+    effect_ability TEXT CHECK (effect_ability IN ('strength', 'speed', 'agility', 'any', NULL)),
+    effect_value INTEGER,
+    cooldown INTEGER DEFAULT 0, -- Number of battles before can be used again
+    restriction TEXT CHECK (restriction IN ('challenger', 'challengee', NULL)),
+    image_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Player tools ownership
+CREATE TABLE IF NOT EXISTS player_tools (
+    player_id TEXT REFERENCES players(id) ON DELETE CASCADE,
+    tool_id TEXT REFERENCES tools(id) ON DELETE CASCADE,
+    quantity INTEGER DEFAULT 1,
+    last_used_battle_id TEXT REFERENCES battles(id),
+    cooldown_remaining INTEGER DEFAULT 0,
+    acquired_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (player_id, tool_id)
+);
+
+-- Battle tool usage - tracks which tools were applied to which cards
+CREATE TABLE IF NOT EXISTS battle_tool_usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    battle_id TEXT REFERENCES battles(id) ON DELETE CASCADE,
+    player_id TEXT REFERENCES players(id) ON DELETE CASCADE,
+    tool_id TEXT REFERENCES tools(id) ON DELETE CASCADE,
+    card_id TEXT REFERENCES cards(id),
+    card_position INTEGER CHECK (card_position >= 0 AND card_position <= 2),
+    applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes for performance

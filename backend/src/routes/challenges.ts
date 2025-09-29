@@ -63,13 +63,18 @@ router.post('/create', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'You need a deck of exactly 10 cards to challenge others' });
   }
 
+  // Determine first round ability
+  const abilities: ('strength' | 'speed' | 'agility')[] = ['strength', 'speed', 'agility'];
+  const firstRoundAbility = abilities[Math.floor(Math.random() * 3)];
+
   // Create the challenge
   const challenge = gameStore.createChallenge({
     challengerId,
     challengerName: challenger.name,
     challengedId,
     challengedName: challenged.name,
-    status: 'pending'
+    status: 'pending',
+    firstRoundAbility
   });
 
   // Send notification to challenged player
@@ -99,6 +104,10 @@ router.post('/create-ai', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'You need a deck of exactly 10 cards to challenge the AI' });
   }
 
+  // Determine first round ability
+  const abilities: ('strength' | 'speed' | 'agility')[] = ['strength', 'speed', 'agility'];
+  const firstRoundAbility = abilities[Math.floor(Math.random() * 3)];
+
   // Create the AI challenge
   const challenge = gameStore.createChallenge({
     challengerId,
@@ -106,7 +115,8 @@ router.post('/create-ai', (req: Request, res: Response) => {
     challengedId: null, // NULL for AI challenges
     challengedName: 'AI Opponent',
     status: 'accepted', // AI automatically accepts
-    isAI: true
+    isAI: true,
+    firstRoundAbility
   });
 
   res.json(challenge);
@@ -115,7 +125,7 @@ router.post('/create-ai', (req: Request, res: Response) => {
 // Set challenger's cards and order
 router.post('/:challengeId/setup', (req: Request, res: Response) => {
   const { challengeId } = req.params;
-  const { cards, order } = req.body;
+  const { cards, order, tools } = req.body;
 
   const challenge = gameStore.getChallenge(challengeId);
   if (!challenge) {
@@ -142,10 +152,11 @@ router.post('/:challengeId/setup', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid order. Must be array of [0,1,2] in desired order' });
   }
 
-  // Update challenge with cards and order
+  // Update challenge with cards, order, and tools
   const updated = gameStore.updateChallenge(challengeId, {
     challengerCards: cards,
-    challengerOrder: order
+    challengerOrder: order,
+    challengerTools: tools || {}
   });
 
   // If it's an AI challenge, immediately set up the AI's cards and execute the battle
@@ -177,6 +188,42 @@ router.post('/:challengeId/setup', (req: Request, res: Response) => {
       status: 'ready'
     });
 
+    // Process tool usage if provided
+    const toolUsages: any[] = [];
+    console.log('[Challenge Setup] Processing tools:', tools);
+    if (tools && typeof tools === 'object') {
+      for (const [position, toolId] of Object.entries(tools)) {
+        const cardPosition = parseInt(position);
+        if (!isNaN(cardPosition) && toolId) {
+          toolUsages.push({
+            playerId: challenge.challengerId,
+            toolId: toolId as string,
+            cardId: cards[cardPosition],
+            cardPosition
+          });
+        }
+      }
+    }
+
+    // Generate random AI tool usage - assign based on play order, not card array order
+    const aiTools = ['running-shoes', 'sledge-hammer', 'lube-tube'];
+    for (let playOrder = 0; playOrder < 3; playOrder++) {
+      // AI always gets a tool on each card
+      const randomTool = aiTools[Math.floor(Math.random() * aiTools.length)];
+      const cardArrayIndex = aiOrder[playOrder]; // Use the play order to get correct card
+      toolUsages.push({
+        playerId: null, // AI player ID is null
+        toolId: randomTool,
+        cardId: aiCards[cardArrayIndex],
+        cardPosition: cardArrayIndex // This should match the battle executor lookup
+      });
+    }
+
+    console.log('[Challenge Setup] Tool usages (including AI):', toolUsages);
+
+    // Use the challenge's firstRoundAbility instead of generating a new random one
+    const firstRoundAbility = challenge.firstRoundAbility;
+
     // Create and execute the battle
     const battle = gameStore.createBattle({
       id: `battle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -185,12 +232,14 @@ router.post('/:challengeId/setup', (req: Request, res: Response) => {
       player1Name: challenge.challengerName,
       player2Name: 'AI Opponent',
       isSimulation: true,
+      firstRoundAbility,
       player1Deck: gameStore.getPlayer(challenge.challengerId)!.deck,
       player2Deck: aiDeck,
       player1Cards: cards,
       player2Cards: aiCards,
       player1Order: order,
       player2Order: aiOrder,
+      toolUsages,
       rounds: [],
       currentRound: 0,
       player1Points: 0,
@@ -263,7 +312,7 @@ router.post('/:challengeId/accept', (req: Request, res: Response) => {
 // Set defender's cards and order (and execute battle)
 router.post('/:challengeId/setup-defense', (req: Request, res: Response) => {
   const { challengeId } = req.params;
-  const { cards, order } = req.body;
+  const { cards, order, tools } = req.body;
 
   const challenge = gameStore.getChallenge(challengeId);
   if (!challenge) {
@@ -285,12 +334,50 @@ router.post('/:challengeId/setup-defense', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid order. Must be array of [0,1,2] in desired order' });
   }
 
-  // Update challenge with defender's cards and order
+  // Update challenge with defender's cards, order, and tools
   gameStore.updateChallenge(challengeId, {
     challengedCards: cards,
     challengedOrder: order,
+    challengedTools: tools || {},
     status: 'ready'
   });
+
+  // Process tool usage for both players
+  const toolUsages: any[] = [];
+  console.log('[Challenge Defense Setup] Processing defender tools:', tools);
+  console.log('[Challenge Defense Setup] Challenger tools from challenge:', challenge.challengerTools);
+
+  // Process challenger's tools (stored from when they set up)
+  if (challenge.challengerTools && challenge.challengerCards) {
+    for (const [position, toolId] of Object.entries(challenge.challengerTools)) {
+      const cardPosition = parseInt(position);
+      if (!isNaN(cardPosition) && toolId) {
+        toolUsages.push({
+          playerId: challenge.challengerId,
+          toolId: toolId as string,
+          cardId: challenge.challengerCards[cardPosition],
+          cardPosition
+        });
+      }
+    }
+  }
+
+  // Process defender's tools
+  if (tools && typeof tools === 'object') {
+    for (const [position, toolId] of Object.entries(tools)) {
+      const cardPosition = parseInt(position);
+      if (!isNaN(cardPosition) && toolId) {
+        toolUsages.push({
+          playerId: challenge.challengedId,
+          toolId: toolId as string,
+          cardId: cards[cardPosition],
+          cardPosition
+        });
+      }
+    }
+  }
+
+  console.log('[Challenge Defense Setup] Combined tool usages:', toolUsages);
 
   // Create and execute the battle
   const battle = gameStore.createBattle({
@@ -300,12 +387,14 @@ router.post('/:challengeId/setup-defense', (req: Request, res: Response) => {
     player1Name: challenge.challengerName,
     player2Name: challenge.challengedName,
     isSimulation: false,
+    firstRoundAbility: challenge.firstRoundAbility, // Use the challenge's firstRoundAbility
     player1Deck: gameStore.getPlayer(challenge.challengerId)!.deck,
     player2Deck: challenge.challengedId ? gameStore.getPlayer(challenge.challengedId)!.deck : [], // Empty for AI, will be set later
     player1Cards: challenge.challengerCards!,
     player2Cards: cards,
     player1Order: challenge.challengerOrder,
     player2Order: order,
+    toolUsages,
     rounds: [],
     currentRound: 0,
     player1Points: 0,

@@ -27,9 +27,51 @@ class GameDatabase {
       const schema = fs.readFileSync(SCHEMA_PATH, 'utf-8');
       this.db.exec(schema);
       console.log('[Database] Schema initialized successfully');
+
+      // Initialize tools after schema is ready
+      this.initializeTools();
     } catch (error) {
       console.error('[Database] Failed to initialize schema:', error);
       throw error;
+    }
+  }
+
+  private initializeTools() {
+    try {
+      // Check if tools already exist
+      const existingTools = this.db.prepare('SELECT COUNT(*) as count FROM tools').get() as { count: number };
+
+      if (existingTools.count > 0) {
+        console.log('[Database] Tools already initialized');
+        return;
+      }
+
+      // Insert default tools
+      const insertTool = this.db.prepare(`
+        INSERT INTO tools (
+          id, name, description, effect_type, effect_ability,
+          effect_value, cooldown, restriction, image_url
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      const tools = [
+        ['running-shoes', 'Running Shoes', 'Gives +2 speed to the card you apply it to', 'stat_boost', 'speed', 2, 0, null, '/images/tools/running-shoes.png'],
+        ['sledge-hammer', 'Sledge Hammer', 'Gives +2 strength to the card you apply it to', 'stat_boost', 'strength', 2, 0, null, '/images/tools/sledge-hammer.png'],
+        ['lube-tube', 'Lube Tube', 'Gives +2 agility to the card you apply it to', 'stat_boost', 'agility', 2, 0, null, '/images/tools/lube-tube.png'],
+        ['spear', 'Spear', 'Gives +2 to any ability. Has a 2-battle cooldown after use', 'any_stat_boost', 'any', 2, 2, null, '/images/tools/spear.png'],
+        ['binoculars', 'Binoculars', 'Reveals 2 random opponent cards. Can only be used when defending', 'reveal_cards', null, 2, 0, 'challengee', '/images/tools/binoculars.png']
+      ];
+
+      const insertMany = this.db.transaction(() => {
+        for (const tool of tools) {
+          insertTool.run(...tool);
+        }
+      });
+
+      insertMany();
+      console.log('[Database] Successfully initialized', tools.length, 'tools');
+    } catch (error) {
+      console.error('[Database] Failed to initialize tools:', error);
     }
   }
 
@@ -94,8 +136,8 @@ class GameDatabase {
       insertBattle: this.db.prepare(`
         INSERT INTO battles (
           id, player1_id, player2_id, player1_name, player2_name,
-          is_simulation, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          is_simulation, status, first_round_ability
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `),
       updateBattle: this.db.prepare(`
         UPDATE battles SET
@@ -116,8 +158,8 @@ class GameDatabase {
       insertChallenge: this.db.prepare(`
         INSERT INTO challenges (
           id, challenger_id, challenger_name,
-          challenged_id, challenged_name, status, expires_at
-        ) VALUES (?, ?, ?, ?, ?, ?, datetime('now', '+24 hours'))
+          challenged_id, challenged_name, status, first_round_ability, expires_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', '+24 hours'))
       `),
       updateChallenge: this.db.prepare(`
         UPDATE challenges SET status = ?, battle_id = ? WHERE id = ?

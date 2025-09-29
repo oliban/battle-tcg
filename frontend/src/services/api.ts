@@ -218,10 +218,11 @@ export const challengeAPI = {
     return response.data;
   },
 
-  setupChallenge: async (challengeId: string, cards: string[], order: number[]): Promise<Challenge | { challenge: Challenge; battle: Battle }> => {
+  setupChallenge: async (challengeId: string, cards: string[], order: number[], tools?: { [key: number]: string }): Promise<Challenge | { challenge: Challenge; battle: Battle }> => {
     const response = await api.post(`/challenges/${challengeId}/setup`, {
       cards,
       order,
+      tools,
     });
     return response.data;
   },
@@ -233,13 +234,14 @@ export const challengeAPI = {
     return response.data;
   },
 
-  setupDefense: async (challengeId: string, cards: string[], order: number[]): Promise<{
+  setupDefense: async (challengeId: string, cards: string[], order: number[], tools?: { [key: number]: string }): Promise<{
     challenge: Challenge;
     battle: Battle;
   }> => {
     const response = await api.post(`/challenges/${challengeId}/setup-defense`, {
       cards,
       order,
+      tools,
     });
     return response.data;
   },

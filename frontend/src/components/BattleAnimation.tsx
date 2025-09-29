@@ -20,6 +20,19 @@ interface RoundState {
   player2StrongestStat?: 'strength' | 'speed' | 'agility';
 }
 
+// Helper to get tool image URL
+const getToolImageUrl = (toolName?: string): string | null => {
+  if (!toolName) return null;
+  const toolImageMap: Record<string, string> = {
+    'Running Shoes': '/images/tools/running-shoes.png',
+    'Sledge Hammer': '/images/tools/sledge-hammer.png',
+    'Lube Tube': '/images/tools/lube-tube.png',
+    'Spear': '/images/tools/spear.png',
+    'Binoculars': '/images/tools/binoculars.png'
+  };
+  return toolImageMap[toolName] || null;
+};
+
 const BattleAnimation: React.FC<BattleAnimationProps> = ({
   battle,
   playerCards,
@@ -34,6 +47,7 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
   });
   const [player1Score, setPlayer1Score] = useState(0);
   const [player2Score, setPlayer2Score] = useState(0);
+  const [showToolBonus, setShowToolBonus] = useState(false);
   const [player1Damage, setPlayer1Damage] = useState(0);
   const [player2Damage, setPlayer2Damage] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -215,6 +229,42 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
         pitch: 1.1,
         volume: 1.0
       });
+
+      // Announce tools that apply to this ability
+      await delay(1000);
+
+      // Reset tool bonus display, then animate it
+      setShowToolBonus(false);
+
+      // In debug mode, skip micro-delays to avoid excessive clicking
+      if (!debugMode) {
+        await delay(200);
+      }
+
+      const toolAnnouncements = [];
+      if (round.player1ToolName && round.player1ToolBonus) {
+        toolAnnouncements.push(round.player1ToolName);
+      }
+      if (round.player2ToolName && round.player2ToolBonus) {
+        toolAnnouncements.push(round.player2ToolName);
+      }
+
+      // Announce all tools at once to reduce debug clicks
+      if (toolAnnouncements.length > 0) {
+        const toolMessage = toolAnnouncements.length === 1
+          ? `${toolAnnouncements[0]} applied!`
+          : `${toolAnnouncements.join(' and ')} applied!`;
+
+        voiceService.speak(toolMessage, {
+          rate: 0.8,
+          pitch: 1.2,
+          volume: 0.9
+        });
+
+        // Animate tool bonus application
+        setShowToolBonus(true);
+        await delay(debugMode ? 100 : 800);
+      }
     }
 
     await delay(2000);
@@ -368,6 +418,68 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
       default: return '#95a5a6';
     }
   };
+
+  // Reusable component for stat display
+  const StatDisplay = ({
+    ability,
+    statValue,
+    baseStatValue,
+    toolBonus,
+    toolName,
+    showToolBonus
+  }: {
+    ability: string;
+    statValue: number;
+    baseStatValue?: number;
+    toolBonus?: number;
+    toolName?: string;
+    showToolBonus: boolean;
+  }) => (
+    <div className="stat-display-large">
+      <span className="stat-label-large">{ability.toUpperCase()}</span>
+      <span className="stat-value-large">
+        {showToolBonus && toolBonus ?
+          <>
+            {baseStatValue || statValue - (toolBonus || 0)}
+            <span style={{
+              color: '#00ff88',
+              animation: 'pulse 0.6s ease-in-out',
+              marginLeft: '4px'
+            }}>
+              +{toolBonus}
+            </span>
+          </>
+          : (baseStatValue || statValue)
+        }
+        {toolName && (
+          <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', marginLeft: '10px' }}>
+            {getToolImageUrl(toolName) && (
+              <img
+                src={getToolImageUrl(toolName)!}
+                alt={toolName}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  objectFit: 'contain',
+                  filter: toolBonus ? 'none' : 'grayscale(100%) opacity(0.5)'
+                }}
+              />
+            )}
+            <span style={{
+              fontSize: '0.3em',
+              color: toolBonus ? '#00ff88' : '#666',
+              marginTop: '2px',
+              textAlign: 'center',
+              maxWidth: '40px',
+              lineHeight: '1'
+            }}>
+              {toolBonus ? '' : 'N/A'}
+            </span>
+          </div>
+        )}
+      </span>
+    </div>
+  );
 
   // During battle intro, we don't need cards yet
   if (currentRoundIndex >= 0 && (!currentRound || !player1Card || !player2Card)) {
@@ -555,8 +667,38 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
             <div className={`player-side ${roundState.phase === 'cards' ? 'slide-in-left' : ''}`}>
               <div className="battle-card-container">
                 {player1Card.imageUrl && (
-                  <div className="card-battle-image">
+                  <div className="card-battle-image" style={{ position: 'relative' }}>
                     <img src={player1Card.imageUrl} alt={player1Card.name} />
+                    {currentRound.player1ToolName && getToolImageUrl(currentRound.player1ToolName) && (
+                      <div
+                        className="tool-icon-overlay"
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          left: '8px',
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '50%',
+                          backgroundColor: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: currentRound.player1ToolBonus ? 1 : 0.6,
+                          border: currentRound.player1ToolBonus ? '2px solid #00ff88' : '2px solid #666',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        <img
+                          src={getToolImageUrl(currentRound.player1ToolName)!}
+                          alt={currentRound.player1ToolName}
+                          style={{
+                            width: '56px',
+                            height: '56px',
+                            objectFit: 'contain'
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="card-name-display">{player1Card.fullName || player1Card.name}</div>
@@ -601,25 +743,14 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
               </div>
               {(roundState.phase === 'rolling' || roundState.phase === 'result') && (
                 <div className="dice-area">
-                  <div className="stat-display-large">
-                    <span className="stat-label-large">{currentRound.ability.toUpperCase()}</span>
-                    <span className="stat-value-large">
-                      {player1Card.abilities[currentRound.ability as keyof typeof player1Card.abilities]}
-                      {(() => {
-                        const modifier = player1Card.titleModifiers?.[currentRound.ability as keyof typeof player1Card.titleModifiers];
-                        if (modifier) {
-                          const currentStat = player1Card.abilities[currentRound.ability as keyof typeof player1Card.abilities];
-                          const baseValue = currentStat - modifier;
-                          return (
-                            <span style={{ color: '#4CAF50', fontSize: '0.6em', marginLeft: '8px' }}>
-                              ({baseValue}{modifier > 0 ? '+' : ''}{modifier})
-                            </span>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </span>
-                  </div>
+                  <StatDisplay
+                    ability={currentRound.ability}
+                    statValue={currentRound.player1StatValue}
+                    baseStatValue={currentRound.player1BaseStatValue}
+                    toolBonus={currentRound.player1ToolBonus}
+                    toolName={currentRound.player1ToolName}
+                    showToolBonus={showToolBonus}
+                  />
                   <div className="dice-roll-area" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                     <div style={{ position: 'relative', width: '120px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <SimpleDice
@@ -689,8 +820,38 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
             <div className={`player-side opponent ${roundState.phase === 'cards' ? 'slide-in-right' : ''}`}>
               <div className="battle-card-container">
                 {player2Card.imageUrl && (
-                  <div className="card-battle-image">
+                  <div className="card-battle-image" style={{ position: 'relative' }}>
                     <img src={player2Card.imageUrl} alt={player2Card.name} />
+                    {currentRound.player2ToolName && getToolImageUrl(currentRound.player2ToolName) && (
+                      <div
+                        className="tool-icon-overlay"
+                        style={{
+                          position: 'absolute',
+                          top: '8px',
+                          left: '8px',
+                          width: '80px',
+                          height: '80px',
+                          borderRadius: '50%',
+                          backgroundColor: 'white',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: currentRound.player2ToolBonus ? 1 : 0.6,
+                          border: currentRound.player2ToolBonus ? '2px solid #00ff88' : '2px solid #666',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        <img
+                          src={getToolImageUrl(currentRound.player2ToolName)!}
+                          alt={currentRound.player2ToolName}
+                          style={{
+                            width: '56px',
+                            height: '56px',
+                            objectFit: 'contain'
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="card-name-display">{player2Card.fullName || player2Card.name}</div>
@@ -735,25 +896,14 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
               </div>
               {(roundState.phase === 'rolling' || roundState.phase === 'result') && (
                 <div className="dice-area">
-                  <div className="stat-display-large">
-                    <span className="stat-label-large">{currentRound.ability.toUpperCase()}</span>
-                    <span className="stat-value-large">
-                      {player2Card.abilities[currentRound.ability as keyof typeof player2Card.abilities]}
-                      {(() => {
-                        const modifier = player2Card.titleModifiers?.[currentRound.ability as keyof typeof player2Card.titleModifiers];
-                        if (modifier) {
-                          const currentStat = player2Card.abilities[currentRound.ability as keyof typeof player2Card.abilities];
-                          const baseValue = currentStat - modifier;
-                          return (
-                            <span style={{ color: '#4CAF50', fontSize: '0.6em', marginLeft: '8px' }}>
-                              ({baseValue}{modifier > 0 ? '+' : ''}{modifier})
-                            </span>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </span>
-                  </div>
+                  <StatDisplay
+                    ability={currentRound.ability}
+                    statValue={currentRound.player2StatValue}
+                    baseStatValue={currentRound.player2BaseStatValue}
+                    toolBonus={currentRound.player2ToolBonus}
+                    toolName={currentRound.player2ToolName}
+                    showToolBonus={showToolBonus}
+                  />
                   <div className="dice-roll-area" style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
                     <div style={{ position: 'relative', width: '120px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <SimpleDice
