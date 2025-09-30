@@ -850,7 +850,9 @@ class DbStore {
       .filter((row: any) => {
         // Include test cards (they start with 'test_card_')
         if (row.id.startsWith('test_card_')) return true;
-        // Exclude variant cards (contain underscore but don't start with test_card_)
+        // Include tool cards (they start with 'tool_')
+        if (row.id.startsWith('tool_')) return true;
+        // Exclude variant cards (contain underscore but don't start with test_card_ or tool_)
         if (row.id.includes('_')) return false;
         // Include all other base cards
         return true;
