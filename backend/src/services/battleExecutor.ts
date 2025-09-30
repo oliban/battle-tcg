@@ -233,6 +233,12 @@ export function executeBattle(battle: Battle): Battle {
     completedAt: new Date()
   });
 
+  // Decrease cooldown counters for both players
+  gameStore.decreaseToolCooldowns(battle.player1Id);
+  if (battle.player2Id) {
+    gameStore.decreaseToolCooldowns(battle.player2Id);
+  }
+
   // Update player statistics
   const player1 = gameStore.getPlayer(battle.player1Id);
   const player2 = battle.player2Id ? gameStore.getPlayer(battle.player2Id) : null;

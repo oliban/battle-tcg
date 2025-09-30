@@ -12,7 +12,7 @@ interface BattleAnimationProps {
 }
 
 interface RoundState {
-  phase: 'battle-intro' | 'intro' | 'cards' | 'cards-flex' | 'ability' | 'rolling' | 'result' | 'damage-victory' | 'complete' | 'final-results';
+  phase: 'battle-intro' | 'intro' | 'cards' | 'cards-flex' | 'ability' | 'rolling' | 'result' | 'damage-victory' | 'complete' | 'coin-toss' | 'final-results';
   player1DiceRolling: boolean;
   player2DiceRolling: boolean;
   showResult: boolean;
@@ -381,6 +381,7 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
       // Check if damage determined the winner (not a clear points victory)
       // Only show damage victory if battle was won by damage (winReason === 'damage')
       const isDamageVictory = battle.winReason === 'damage';
+      const isCoinToss = battle.winReason === 'coin-toss';
 
       if (isDamageVictory) {
         // Show damage victory screen first
@@ -397,6 +398,17 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
         });
 
         await delay(4000);
+      }
+
+      // Show coin toss animation if battle was decided by coin toss
+      if (isCoinToss) {
+        setRoundState(prev => ({ ...prev, phase: 'coin-toss' }));
+        voiceService.speak('Lancio della moneta!', {
+          rate: 0.9,
+          pitch: 1.2,
+          volume: 1.0
+        });
+        await delay(3500); // Wait for coin animation
       }
 
       // Show final results screen
@@ -638,6 +650,60 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
           </div>
         )}
 
+        {roundState.phase === 'coin-toss' && (
+          <div className="coin-toss-animation animated-fade-in" style={{
+            textAlign: 'center',
+            color: 'white',
+            padding: '60px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%'
+          }}>
+            <h1 style={{
+              fontSize: '48px',
+              marginBottom: '40px',
+              color: '#f1c40f',
+              textShadow: '3px 3px 6px rgba(0,0,0,0.5)'
+            }}>
+              COIN TOSS!
+            </h1>
+            <div className="coin-flip" style={{
+              width: '150px',
+              height: '150px',
+              margin: '40px auto',
+              position: 'relative',
+              transformStyle: 'preserve-3d',
+              animation: 'coinFlip 1s ease-in-out 3'
+            }}>
+              <div style={{
+                width: '100%',
+                height: '100%',
+                borderRadius: '50%',
+                background: 'linear-gradient(45deg, #FFD700, #FFA500)',
+                border: '8px solid #DAA520',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '64px',
+                fontWeight: 'bold',
+                color: '#8B4513'
+              }}>
+                🪙
+              </div>
+            </div>
+            <h2 style={{
+              fontSize: '32px',
+              marginTop: '40px',
+              color: '#ecf0f1'
+            }}>
+              Deciding the winner...
+            </h2>
+          </div>
+        )}
+
         {roundState.phase === 'final-results' && (
           <div className="final-results animated-fade-in" style={{
             textAlign: 'center',
@@ -664,6 +730,17 @@ const BattleAnimation: React.FC<BattleAnimationProps> = ({
             }}>
               {battle.rounds.filter(r => r.winner === 'player1').length} - {battle.rounds.filter(r => r.winner === 'player2').length}
             </h2>
+            {battle.winReason === 'coin-toss' && (
+              <div style={{
+                fontSize: '32px',
+                marginTop: '20px',
+                color: '#f39c12',
+                textShadow: '2px 2px 4px rgba(0,0,0,0.5)',
+                fontStyle: 'italic'
+              }}>
+                🪙 Won by Coin Toss
+              </div>
+            )}
             {(player1Damage > 0 || player2Damage > 0) && (
               <div style={{ fontSize: '28px', marginTop: '30px', display: 'flex', gap: '40px', justifyContent: 'center' }}>
                 <div style={{ color: battle.winner === battle.player1Id ? '#2ecc71' : '#e74c3c' }}>

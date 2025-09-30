@@ -44,6 +44,18 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
   const [draggedTool, setDraggedTool] = useState<string | null>(null);
   const [dragOverCard, setDragOverCard] = useState<number | null>(null);
 
+  // Function to load player tools (can be called to refresh)
+  const loadTools = async () => {
+    try {
+      console.log('[Challenge] Loading tools for player:', player.id, player.name);
+      const tools = await toolsAPI.getPlayerTools(player.id);
+      console.log('[Challenge] Tools loaded:', tools);
+      setPlayerTools(tools);
+    } catch (err) {
+      console.error('Failed to load tools:', err);
+    }
+  };
+
   // Load player's cards and tools
   useEffect(() => {
     const loadCards = async () => {
@@ -53,17 +65,6 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
         setPlayerCards(myCards);
       } catch (err) {
         console.error('Failed to load cards:', err);
-      }
-    };
-
-    const loadTools = async () => {
-      try {
-        console.log('[Challenge] Loading tools for player:', player.id, player.name);
-        const tools = await toolsAPI.getPlayerTools(player.id);
-        console.log('[Challenge] Tools loaded:', tools);
-        setPlayerTools(tools);
-      } catch (err) {
-        console.error('Failed to load tools:', err);
       }
     };
 
@@ -202,6 +203,9 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
         // Set up the cards and order, which will automatically trigger the battle
         const result = await challengeAPI.setupChallenge(currentChallenge.id, selectedCards, selectedOrder, toolsObj);
 
+        // Refresh player tools to reflect cooldowns
+        await loadTools();
+
         // Navigate to battle view immediately
         if ('battle' in result && result.battle && result.battle.id) {
           await loadBattleAndAnimate(result.battle.id);
@@ -227,6 +231,9 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
         // Set up the cards and order
         await challengeAPI.setupChallenge(currentChallenge.id, selectedCards, selectedOrder, toolsObj);
+
+        // Refresh player tools to reflect cooldowns
+        await loadTools();
 
         // Return to challenge list for PvP challenges
         setView('list');

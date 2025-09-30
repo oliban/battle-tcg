@@ -158,6 +158,14 @@ class GameStore {
   applyToolToBattle(battleId: string, playerId: string, toolId: string, cardId: string, cardPosition: number): boolean {
     return dbStore.applyToolToBattle(battleId, playerId, toolId, cardId, cardPosition);
   }
+
+  decreaseToolCooldowns(playerId: string): void {
+    return dbStore.decreaseToolCooldowns(playerId);
+  }
+
+  setToolCooldown(playerId: string, toolId: string, cooldown: number): void {
+    return dbStore.setToolCooldown(playerId, toolId, cooldown);
+  }
 }
 
 export const gameStore = new GameStore();

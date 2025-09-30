@@ -1046,14 +1046,59 @@ class DbStore {
 
   applyToolToBattle(battleId: string, playerId: string, toolId: string, cardId: string, cardPosition: number): boolean {
     try {
+      // First, insert the tool usage
       gameDb.connection.prepare(`
         INSERT INTO battle_tool_usage (battle_id, player_id, tool_id, card_id, card_position)
         VALUES (?, ?, ?, ?, ?)
       `).run(battleId, playerId, toolId, cardId, cardPosition);
+
+      // Immediately apply cooldown to prevent using the same tool in parallel battles
+      const tool = gameDb.connection.prepare('SELECT cooldown FROM tools WHERE id = ?').get(toolId) as any;
+
+      if (tool && tool.cooldown > 0) {
+        gameDb.connection.prepare(`
+          UPDATE player_tools
+          SET cooldown_remaining = ?, last_used_battle_id = ?
+          WHERE player_id = ? AND tool_id = ?
+        `).run(tool.cooldown, battleId, playerId, toolId);
+
+        console.log(`[DbStore] Applied immediate cooldown of ${tool.cooldown} battles to tool ${toolId} for player ${playerId}`);
+      }
+
       return true;
     } catch (error) {
       console.error('[DbStore] Failed to apply tool to battle:', error);
       return false;
+    }
+  }
+
+
+  decreaseToolCooldowns(playerId: string): void {
+    try {
+      // Decrease cooldown_remaining for all tools that have cooldown > 0
+      gameDb.connection.prepare(`
+        UPDATE player_tools
+        SET cooldown_remaining = MAX(0, cooldown_remaining - 1)
+        WHERE player_id = ? AND cooldown_remaining > 0
+      `).run(playerId);
+
+      console.log(`[DbStore] Decreased tool cooldowns for player ${playerId}`);
+    } catch (error) {
+      console.error('[DbStore] Failed to decrease tool cooldowns:', error);
+    }
+  }
+
+  setToolCooldown(playerId: string, toolId: string, cooldown: number): void {
+    try {
+      gameDb.connection.prepare(`
+        UPDATE player_tools
+        SET cooldown_remaining = ?
+        WHERE player_id = ? AND tool_id = ?
+      `).run(cooldown, playerId, toolId);
+
+      console.log(`[DbStore] Set cooldown of ${cooldown} for tool ${toolId} for player ${playerId}`);
+    } catch (error) {
+      console.error('[DbStore] Failed to set tool cooldown:', error);
     }
   }
 

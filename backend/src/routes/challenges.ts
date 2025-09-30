@@ -152,12 +152,42 @@ router.post('/:challengeId/setup', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid order. Must be array of [0,1,2] in desired order' });
   }
 
+  // Validate tools are not on cooldown
+  if (tools && typeof tools === 'object') {
+    const playerTools = gameStore.getPlayerTools(challenge.challengerId);
+    for (const toolId of Object.values(tools)) {
+      if (toolId) {
+        const playerTool = playerTools.find(pt => pt.toolId === toolId);
+        if (!playerTool) {
+          return res.status(400).json({ error: `Tool ${toolId} not found in player's inventory` });
+        }
+        if (playerTool.cooldownRemaining > 0) {
+          return res.status(400).json({ error: `Tool is on cooldown for ${playerTool.cooldownRemaining} more battle(s)` });
+        }
+      }
+    }
+  }
+
   // Update challenge with cards, order, and tools
   const updated = gameStore.updateChallenge(challengeId, {
     challengerCards: cards,
     challengerOrder: order,
     challengerTools: tools || {}
   });
+
+  // Apply cooldown immediately for challenger's tools (prevents using same tool in parallel challenges)
+  if (tools && typeof tools === 'object') {
+    for (const toolId of Object.values(tools)) {
+      if (toolId) {
+        const tool = gameStore.getAllTools().find(t => t.id === toolId);
+        if (tool && tool.cooldown > 0) {
+          // Set cooldown directly on player_tools
+          gameStore.setToolCooldown(challenge.challengerId, toolId as string, tool.cooldown);
+          console.log(`[Challenge Setup] Applied cooldown of ${tool.cooldown} to tool ${toolId} for challenger ${challenge.challengerId}`);
+        }
+      }
+    }
+  }
 
   // If it's an AI challenge, immediately set up the AI's cards and execute the battle
   if (isAIChallenge) {
@@ -379,9 +409,10 @@ router.post('/:challengeId/setup-defense', (req: Request, res: Response) => {
 
   console.log('[Challenge Defense Setup] Combined tool usages:', toolUsages);
 
-  // Create and execute the battle
+  // Create the battle
+  const battleId = `battle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const battle = gameStore.createBattle({
-    id: `battle_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: battleId,
     player1Id: challenge.challengerId,
     player2Id: challenge.challengedId,
     player1Name: challenge.challengerName,
@@ -404,6 +435,11 @@ router.post('/:challengeId/setup-defense', (req: Request, res: Response) => {
     status: 'ready',
     createdAt: new Date()
   });
+
+  // Apply each tool to the battle (this sets cooldowns immediately)
+  for (const usage of toolUsages) {
+    gameStore.applyToolToBattle(battleId, usage.playerId, usage.toolId, usage.cardId, usage.cardPosition);
+  }
 
   // Execute battle immediately using shared battleExecutor service
   const executeResult = executeBattle(battle);
