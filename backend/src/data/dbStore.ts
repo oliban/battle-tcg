@@ -38,7 +38,9 @@ class DbStore {
     // Give starter tools to new player
     this.givePlayerTool(player.id, 'running-shoes', 1);
     this.givePlayerTool(player.id, 'sledge-hammer', 1);
-    this.givePlayerTool(player.id, 'tube-of-lotion', 1);
+    this.givePlayerTool(player.id, 'lube-tube', 1);
+    this.givePlayerTool(player.id, 'spear', 1);
+    this.givePlayerTool(player.id, 'binoculars', 1);
 
     console.log('[DbStore] Created player with starter tools:', player.id);
     return player;
@@ -203,6 +205,8 @@ class DbStore {
       card.fullName || null,
       card.description,
       imageFileName,
+      card.cardType || 'battle',
+      card.toolId || null,
       card.abilities.strength,
       card.abilities.speed,
       card.abilities.agility,
@@ -752,6 +756,8 @@ class DbStore {
       fullName: row.full_name,
       description: row.description,
       imageUrl: row.image_url ? `/images/card_images/${row.image_url}` : undefined,
+      cardType: row.card_type || 'battle',
+      toolId: row.tool_id,
       abilities: {
         strength: row.strength,
         speed: row.speed,

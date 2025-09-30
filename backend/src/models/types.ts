@@ -1,5 +1,6 @@
 export type Ability = 'strength' | 'speed' | 'agility';
 export type Rarity = 'common' | 'uncommon' | 'rare';
+export type CardType = 'battle' | 'tool';
 
 export interface Card {
   id: string;
@@ -8,6 +9,8 @@ export interface Card {
   fullName?: string; // Combined title + name for display
   description: string;
   imageUrl?: string;
+  cardType?: CardType; // Type of card (battle or tool)
+  toolId?: string; // Reference to tool (for tool cards)
   abilities: {
     strength: number;
     speed: number;

@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS cards (
     full_name TEXT,
     description TEXT,
     image_url TEXT,
+    card_type TEXT CHECK (card_type IN ('battle', 'tool')) DEFAULT 'battle',
+    tool_id TEXT REFERENCES tools(id),
     strength INTEGER NOT NULL,
     speed INTEGER NOT NULL,
     agility INTEGER NOT NULL,

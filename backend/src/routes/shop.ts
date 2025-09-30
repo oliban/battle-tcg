@@ -33,9 +33,21 @@ router.post('/buy-pack', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'No cards available in pool' });
   }
 
-  // Apply titles to all cards from the pack
+  // Process cards from the pack
   const titledCards = packCards.map((card: Card) => {
-    // Create a new card instance with title
+    // Tool cards: give the tool to player and return card copy
+    if (card.cardType === 'tool' && card.toolId) {
+      // Grant tool to player
+      gameStore.givePlayerTool(playerId, card.toolId, 1);
+
+      // Create a copy of the tool card for the player's collection
+      const toolCard = { ...card };
+      toolCard.id = `${card.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      gameStore.createCard(toolCard);
+      return toolCard;
+    }
+
+    // Battle cards: apply titles and create variants
     const titledCard = applyTitleToCard({ ...card });
 
     // Extract the base card ID (first part before any underscore)

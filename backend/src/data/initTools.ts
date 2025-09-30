@@ -23,14 +23,14 @@ export const defaultTools: Tool[] = [
     imageUrl: '/images/tools/sledge-hammer.png'
   },
   {
-    id: 'tube-of-lotion',
-    name: 'Tube of Lotion',
+    id: 'lube-tube',
+    name: 'Lube Tube',
     description: 'Gives +2 agility to the card you apply it to',
     effectType: 'stat_boost',
     effectAbility: 'agility',
     effectValue: 2,
     cooldown: 0,
-    imageUrl: '/images/tools/tube-of-lotion.png'
+    imageUrl: '/images/tools/lube-tube.png'
   },
   {
     id: 'spear',
@@ -98,7 +98,7 @@ export function initializeTools() {
 // Give initial tools to new players
 export function giveStarterTools(playerId: string) {
   try {
-    const starterTools = ['running-shoes', 'sledge-hammer', 'tube-of-lotion'];
+    const starterTools = ['running-shoes', 'sledge-hammer', 'lube-tube', 'spear', 'binoculars'];
 
     const insertPlayerTool = gameDb.connection.prepare(`
       INSERT OR IGNORE INTO player_tools (player_id, tool_id, quantity)

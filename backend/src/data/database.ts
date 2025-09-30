@@ -98,11 +98,12 @@ class GameDatabase {
       insertCard: this.db.prepare(`
         INSERT INTO cards (
           id, name, title, full_name, description, image_url,
+          card_type, tool_id,
           strength, speed, agility,
           base_strength, base_speed, base_agility,
           title_modifier_strength, title_modifier_speed, title_modifier_agility,
           critical_hit_chance, rarity, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `),
 
       // Player cards
