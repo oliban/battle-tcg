@@ -162,39 +162,45 @@ class DbStore {
     let imageFileName = card.imageUrl || null;
 
     if (imageFileName) {
-      // Check if this is a variant card (ID contains underscore and timestamp)
-      const isVariant = card.id.includes('_') && card.id.match(/_\d{13}_/);
+      // Tool cards: keep the full /images/tools/ path
+      if (card.cardType === 'tool' && imageFileName.startsWith('/images/tools/')) {
+        // Keep the full path as-is for tool cards
+        imageFileName = imageFileName;
+      } else {
+        // Check if this is a variant card (ID contains underscore and timestamp)
+        const isVariant = card.id.includes('_') && card.id.match(/_\d{13}_/);
 
-      if (isVariant) {
-        // For variant cards, extract the base card ID and use its image
-        const baseCardId = card.id.split('_')[0];
+        if (isVariant) {
+          // For variant cards, extract the base card ID and use its image
+          const baseCardId = card.id.split('_')[0];
 
-        // If the imageUrl already points to the base card image, extract just the filename
-        if (imageFileName.includes(baseCardId)) {
-          // Keep the original extension from the imageUrl
-          const extension = imageFileName.split('.').pop() || 'png';
-          imageFileName = `${baseCardId}.${extension}`;
+          // If the imageUrl already points to the base card image, extract just the filename
+          if (imageFileName.includes(baseCardId)) {
+            // Keep the original extension from the imageUrl
+            const extension = imageFileName.split('.').pop() || 'png';
+            imageFileName = `${baseCardId}.${extension}`;
+          } else if (imageFileName.startsWith('/images/card_images/')) {
+            // Extract just the filename from the path
+            imageFileName = imageFileName.replace('/images/card_images/', '');
+          }
+        } else if (imageFileName.startsWith('data:image')) {
+          // If it's base64 for a base card, save to disk synchronously
+          // For now, we'll save without conversion to avoid async issues
+          imageFileName = saveImageToDiskSync(imageFileName, card.id);
+        } else if (imageFileName.startsWith('http://') || imageFileName.startsWith('https://')) {
+          // If it has any full URL, extract just the filename
+          const matches = imageFileName.match(/\/([^\/]+)$/);
+          imageFileName = matches ? matches[1] : imageFileName;
+        } else if (imageFileName.startsWith('/api/images/')) {
+          // If it has the old API path, extract just the filename
+          imageFileName = imageFileName.replace('/api/images/', '');
         } else if (imageFileName.startsWith('/images/card_images/')) {
-          // Extract just the filename from the path
+          // If it has the full card images path, extract just the filename
           imageFileName = imageFileName.replace('/images/card_images/', '');
+        } else if (imageFileName.startsWith('/images/')) {
+          // If it has the images path, extract just the filename
+          imageFileName = imageFileName.replace('/images/', '');
         }
-      } else if (imageFileName.startsWith('data:image')) {
-        // If it's base64 for a base card, save to disk synchronously
-        // For now, we'll save without conversion to avoid async issues
-        imageFileName = saveImageToDiskSync(imageFileName, card.id);
-      } else if (imageFileName.startsWith('http://') || imageFileName.startsWith('https://')) {
-        // If it has any full URL, extract just the filename
-        const matches = imageFileName.match(/\/([^\/]+)$/);
-        imageFileName = matches ? matches[1] : imageFileName;
-      } else if (imageFileName.startsWith('/api/images/')) {
-        // If it has the old API path, extract just the filename
-        imageFileName = imageFileName.replace('/api/images/', '');
-      } else if (imageFileName.startsWith('/images/card_images/')) {
-        // If it has the full card images path, extract just the filename
-        imageFileName = imageFileName.replace('/images/card_images/', '');
-      } else if (imageFileName.startsWith('/images/')) {
-        // If it has the images path, extract just the filename
-        imageFileName = imageFileName.replace('/images/', '');
       }
     }
 
