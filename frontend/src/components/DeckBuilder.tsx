@@ -53,10 +53,13 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ player, playerCards, onDeckUp
   };
 
   useEffect(() => {
+    // Filter out tool cards from deck builder
+    const battleCards = playerCards.filter(card => card.cardType !== 'tool');
+
     // For "Latest Added", don't group cards - show each individual card
     if (sortBy === 'latest') {
       // Convert individual cards to single-card groups for consistency with the component's structure
-      const individualGroups = playerCards.map(card => ({
+      const individualGroups = battleCards.map(card => ({
         baseCard: card,
         count: 1,
         instanceIds: [card.id],
@@ -67,7 +70,7 @@ const DeckBuilder: React.FC<DeckBuilderProps> = ({ player, playerCards, onDeckUp
     }
 
     // Group and sort cards for other sort options
-    const grouped = groupCards(playerCards);
+    const grouped = groupCards(battleCards);
 
     // Sort the grouped cards
     const sorted = [...grouped].sort((a, b) => {

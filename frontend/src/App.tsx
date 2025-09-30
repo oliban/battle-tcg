@@ -434,8 +434,11 @@ function App() {
             ) : (
               <div className="cards-grid">
                 {(() => {
+                  // Filter out tool cards from collection view
+                  const battleCards = playerCards.filter(card => card.cardType !== 'tool');
+
                   // Don't group cards - show each variant separately
-                  const individualCards = playerCards;
+                  const individualCards = battleCards;
 
                   // Sort the cards (skip sorting for 'latest' since backend already sorts by acquired_at DESC)
                   const sortedCards = collectionSortBy === 'latest'
