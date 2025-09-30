@@ -12,7 +12,10 @@ interface CardProps {
 }
 
 const Card: React.FC<CardProps> = ({ card, onClick, selected, count, hideCrit }) => {
-  // Calculate total including title modifiers
+  // Tool cards don't have stats
+  const isToolCard = card.cardType === 'tool';
+
+  // Calculate total including title modifiers (only for battle cards)
   const strengthTotal = card.abilities.strength + (card.titleModifiers?.strength || 0);
   const speedTotal = card.abilities.speed + (card.titleModifiers?.speed || 0);
   const agilityTotal = card.abilities.agility + (card.titleModifiers?.agility || 0);
@@ -72,46 +75,56 @@ const Card: React.FC<CardProps> = ({ card, onClick, selected, count, hideCrit })
         <p>{card.description}</p>
       </div>
 
-      <div className="card-stats">
-        <div className="stat">
-          <span className="stat-label">STR</span>
-          <span className="stat-value">
-            {card.abilities.strength}
-            {card.titleModifiers?.strength !== 0 && card.titleModifiers?.strength !== undefined && (
-              <span className={`modifier ${card.titleModifiers.strength > 0 ? 'positive' : 'negative'}`}>
-                {card.titleModifiers.strength > 0 ? '+' : ''}{card.titleModifiers.strength}
+      {!isToolCard && (
+        <>
+          <div className="card-stats">
+            <div className="stat">
+              <span className="stat-label">STR</span>
+              <span className="stat-value">
+                {card.abilities.strength}
+                {card.titleModifiers?.strength !== 0 && card.titleModifiers?.strength !== undefined && (
+                  <span className={`modifier ${card.titleModifiers.strength > 0 ? 'positive' : 'negative'}`}>
+                    {card.titleModifiers.strength > 0 ? '+' : ''}{card.titleModifiers.strength}
+                  </span>
+                )}
               </span>
-            )}
-          </span>
-        </div>
-        <div className="stat">
-          <span className="stat-label">SPD</span>
-          <span className="stat-value">
-            {card.abilities.speed}
-            {card.titleModifiers?.speed !== 0 && card.titleModifiers?.speed !== undefined && (
-              <span className={`modifier ${card.titleModifiers.speed > 0 ? 'positive' : 'negative'}`}>
-                {card.titleModifiers.speed > 0 ? '+' : ''}{card.titleModifiers.speed}
+            </div>
+            <div className="stat">
+              <span className="stat-label">SPD</span>
+              <span className="stat-value">
+                {card.abilities.speed}
+                {card.titleModifiers?.speed !== 0 && card.titleModifiers?.speed !== undefined && (
+                  <span className={`modifier ${card.titleModifiers.speed > 0 ? 'positive' : 'negative'}`}>
+                    {card.titleModifiers.speed > 0 ? '+' : ''}{card.titleModifiers.speed}
+                  </span>
+                )}
               </span>
-            )}
-          </span>
-        </div>
-        <div className="stat">
-          <span className="stat-label">AGL</span>
-          <span className="stat-value">
-            {card.abilities.agility}
-            {card.titleModifiers?.agility !== 0 && card.titleModifiers?.agility !== undefined && (
-              <span className={`modifier ${card.titleModifiers.agility > 0 ? 'positive' : 'negative'}`}>
-                {card.titleModifiers.agility > 0 ? '+' : ''}{card.titleModifiers.agility}
+            </div>
+            <div className="stat">
+              <span className="stat-label">AGL</span>
+              <span className="stat-value">
+                {card.abilities.agility}
+                {card.titleModifiers?.agility !== 0 && card.titleModifiers?.agility !== undefined && (
+                  <span className={`modifier ${card.titleModifiers.agility > 0 ? 'positive' : 'negative'}`}>
+                    {card.titleModifiers.agility > 0 ? '+' : ''}{card.titleModifiers.agility}
+                  </span>
+                )}
               </span>
-            )}
-          </span>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <div className="card-total">
-        <span className="total-label">Total:</span>
-        <span className="total-value">{totalPoints}</span>
-      </div>
+          <div className="card-total">
+            <span className="total-label">Total:</span>
+            <span className="total-value">{totalPoints}</span>
+          </div>
+        </>
+      )}
+
+      {isToolCard && (
+        <div className="tool-card-badge">
+          <span className="tool-badge-text">TOOL CARD</span>
+        </div>
+      )}
     </div>
   );
 };

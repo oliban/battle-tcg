@@ -749,13 +749,21 @@ class DbStore {
 
   // Helper methods
   private rowToCard(row: any): Card {
+    // Handle image URL: if it already starts with /images/, use as-is; otherwise add card_images prefix
+    let imageUrl = undefined;
+    if (row.image_url) {
+      imageUrl = row.image_url.startsWith('/images/')
+        ? row.image_url
+        : `/images/card_images/${row.image_url}`;
+    }
+
     return {
       id: row.id,
       name: row.name,
       title: row.title,
       fullName: row.full_name,
       description: row.description,
-      imageUrl: row.image_url ? `/images/card_images/${row.image_url}` : undefined,
+      imageUrl,
       cardType: row.card_type || 'battle',
       toolId: row.tool_id,
       abilities: {

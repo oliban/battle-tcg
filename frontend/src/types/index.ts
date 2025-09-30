@@ -1,5 +1,6 @@
 export type Ability = 'strength' | 'speed' | 'agility';
 export type Rarity = 'common' | 'uncommon' | 'rare';
+export type CardType = 'battle' | 'tool';
 
 export interface Card {
   id: string;
@@ -25,6 +26,8 @@ export interface Card {
   };
   rarity: Rarity;
   criticalHitChance?: number; // Percentage chance of critical hit (5-15%)
+  cardType?: CardType; // Type of card (battle or tool)
+  toolId?: string; // Reference to tool (for tool cards)
   createdAt: string;
   createdBy: string;
 }
