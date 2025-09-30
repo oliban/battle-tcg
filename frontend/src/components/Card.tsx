@@ -71,7 +71,7 @@ const Card: React.FC<CardProps> = ({ card, onClick, selected, count, hideCrit })
         </div>
       )}
 
-      <div className="card-description">
+      <div className={`card-description ${isToolCard ? 'tool-card-description' : ''}`}>
         <p>{card.description}</p>
       </div>
 

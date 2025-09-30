@@ -184,6 +184,15 @@
   padding: 0 5px;
 }
 
+/* Tool card description - larger text */
+.card-description.tool-card-description {
+  font-size: 18px;
+  line-height: 1.5;
+  max-height: none;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
 /* Card stats - Shield badges style */
 .card-stats {
   display: flex;
