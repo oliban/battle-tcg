@@ -119,12 +119,6 @@ const Card: React.FC<CardProps> = ({ card, onClick, selected, count, hideCrit })
           </div>
         </>
       )}
-
-      {isToolCard && (
-        <div className="tool-card-badge">
-          <span className="tool-badge-text">TOOL CARD</span>
-        </div>
-      )}
     </div>
   );
 };
