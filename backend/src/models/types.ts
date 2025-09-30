@@ -191,6 +191,7 @@ export interface Challenge {
   challengedCards?: string[];
   challengedOrder?: number[];
   challengedTools?: { [position: number]: string }; // Tools assigned by defender
+  revealedCards?: string[]; // Cards revealed by binoculars or similar tools
   battleId?: string;
   isAI?: boolean; // Flag to indicate if this is an AI challenge
   firstRoundAbility: Ability; // The ability that will be used in round 1

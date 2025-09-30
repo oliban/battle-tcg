@@ -476,6 +476,70 @@ router.post('/:challengeId/setup-defense', (req: Request, res: Response) => {
   });
 });
 
+// Use binoculars to reveal opponent cards (defender only)
+router.post('/:challengeId/use-binoculars', (req: Request, res: Response) => {
+  const { challengeId } = req.params;
+  const { playerId } = req.body;
+
+  const challenge = gameStore.getChallenge(challengeId);
+  if (!challenge) {
+    return res.status(404).json({ error: 'Challenge not found' });
+  }
+
+  // Validate that the player is the defender
+  if (challenge.challengedId !== playerId) {
+    return res.status(403).json({ error: 'Only the defender can use binoculars' });
+  }
+
+  // Validate challenge is in accepted state
+  if (challenge.status !== 'accepted') {
+    return res.status(400).json({ error: 'Challenge must be accepted to use binoculars' });
+  }
+
+  // Validate player has binoculars tool
+  const playerTools = gameStore.getPlayerTools(playerId);
+  const binocularsTool = playerTools.find(pt => pt.toolId === 'binoculars');
+
+  if (!binocularsTool) {
+    return res.status(400).json({ error: 'Player does not have binoculars' });
+  }
+
+  if (binocularsTool.cooldownRemaining > 0) {
+    return res.status(400).json({ error: `Binoculars is on cooldown for ${binocularsTool.cooldownRemaining} more battle(s)` });
+  }
+
+  // Get tool details
+  const tool = gameStore.getAllTools().find(t => t.id === 'binoculars');
+  if (!tool) {
+    return res.status(500).json({ error: 'Binoculars tool not found in game data' });
+  }
+
+  // Validate challenger has selected their cards
+  if (!challenge.challengerCards || challenge.challengerCards.length === 0) {
+    return res.status(400).json({ error: 'Challenger has not selected cards yet' });
+  }
+
+  // Randomly select N cards to reveal (where N = tool.effectValue, default 2)
+  const numToReveal = tool.effectValue || 2;
+  const revealedCards = [...challenge.challengerCards]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, Math.min(numToReveal, challenge.challengerCards.length));
+
+  // Apply cooldown immediately
+  gameStore.setToolCooldown(playerId, 'binoculars', tool.cooldown);
+  console.log(`[Use Binoculars] Applied cooldown of ${tool.cooldown} to binoculars for player ${playerId}`);
+
+  // Update challenge with revealed cards
+  const updatedChallenge = gameStore.updateChallenge(challengeId, {
+    revealedCards
+  });
+
+  res.json({
+    challenge: updatedChallenge,
+    revealedCards
+  });
+});
+
 // Decline a challenge
 router.post('/:challengeId/decline', (req: Request, res: Response) => {
   const { challengeId } = req.params;

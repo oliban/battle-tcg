@@ -43,6 +43,8 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
   const [appliedTools, setAppliedTools] = useState<Map<number, string>>(new Map()); // cardIndex -> toolId
   const [draggedTool, setDraggedTool] = useState<string | null>(null);
   const [dragOverCard, setDragOverCard] = useState<number | null>(null);
+  const [revealedCards, setRevealedCards] = useState<Card[]>([]);
+  const [binocularsUsed, setBinocularsUsed] = useState(false);
 
   // Function to load player tools (can be called to refresh)
   const loadTools = async () => {
@@ -121,6 +123,9 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
       const challenge = await challengeAPI.createAIChallenge(player.id);
       setCurrentChallenge(challenge);
 
+      // Reload tools to get fresh cooldown data
+      await loadTools();
+
       // Get 3 random cards from the deck for the challenge
       const deckCards = playerCards.filter(c => player.deck.includes(c.id));
       const shuffled = [...deckCards].sort(() => Math.random() - 0.5);
@@ -146,6 +151,9 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
       // Create the challenge immediately to get the firstRoundAbility
       const challenge = await challengeAPI.createChallenge(player.id, opponent.id);
       setCurrentChallenge(challenge);
+
+      // Reload tools to get fresh cooldown data
+      await loadTools();
 
       // Get 3 random cards from the deck for the challenge
       const deckCards = playerCards.filter(c => player.deck.includes(c.id));
@@ -270,6 +278,8 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
     setLoading(true);
     try {
       await challengeAPI.acceptChallenge(selectedChallenge.id, player.id);
+      // Reload tools to get fresh cooldown data
+      await loadTools();
       setView('accept-cards');
       // Get 3 random cards from the deck for defense
       const deckCards = playerCards.filter(c => player.deck.includes(c.id));
@@ -370,6 +380,38 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
       loadChallenges();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to decline challenge');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUseBinoculars = async () => {
+    if (!selectedChallenge || binocularsUsed) return;
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await challengeAPI.useBinoculars(selectedChallenge.id, player.id);
+      const cardIds = response.revealedCards || [];
+
+      // Fetch full card details
+      const cards = await Promise.all(
+        cardIds.map(async (id: string) => {
+          try {
+            return await cardAPI.getCard(id);
+          } catch (err) {
+            console.error(`Failed to fetch card ${id}:`, err);
+            return null;
+          }
+        })
+      );
+
+      setRevealedCards(cards.filter((c): c is Card => c !== null));
+      setBinocularsUsed(true);
+      await loadTools(); // Refresh to show cooldown
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to use binoculars');
     } finally {
       setLoading(false);
     }
@@ -687,7 +729,12 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
   const renderCardSelection = () => {
     const battleCards = selectedCards.map(id => playerCards.find(c => c.id === id)!).filter(Boolean);
-    const availableTools = playerTools.filter(pt => pt.cooldownRemaining === 0);
+    // Filter tools: challenger can't use defender-only tools
+    const availableTools = playerTools.filter(pt => {
+      if (pt.cooldownRemaining > 0) return false;
+      if (!pt.tool) return false;
+      return pt.tool.restriction !== 'challengee';
+    });
 
     return (
       <div className="card-selection">
@@ -760,7 +807,7 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
                   <div className="applied-tools">
                     <div className="tool-badge">
                       {(() => {
-                        const tool = availableTools.find(pt => pt.toolId === appliedTool)?.tool;
+                        const tool = availableTools.find((pt: PlayerTool) => pt.toolId === appliedTool)?.tool;
                         if (tool?.imageUrl) {
                           return (
                             <img
@@ -849,11 +896,20 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
 
   const renderDefenseSetup = () => {
     const battleCards = selectedCards.map(id => playerCards.find(c => c.id === id)!).filter(Boolean);
-    const availableTools = playerTools.filter(pt => pt.cooldownRemaining === 0);
+    // Filter tools: defender can't use challenger-only tools
+    const allAvailableTools = playerTools.filter(pt => {
+      if (pt.cooldownRemaining > 0) return false;
+      if (!pt.tool) return false;
+      return pt.tool.restriction !== 'challenger';
+    });
+    // Split into action tools (reveal_cards) and card tools (stat_boost, any_stat_boost)
+    const actionTools = allAvailableTools.filter(pt => pt.tool && pt.tool.effectType === 'reveal_cards');
+    const cardTools = allAvailableTools.filter(pt => pt.tool && pt.tool.effectType !== 'reveal_cards');
 
     console.log('[Defense Setup] Current player:', player);
     console.log('[Defense Setup] playerTools:', playerTools);
-    console.log('[Defense Setup] availableTools:', availableTools);
+    console.log('[Defense Setup] actionTools:', actionTools);
+    console.log('[Defense Setup] cardTools:', cardTools);
 
     return (
       <div className="defense-setup">
@@ -872,36 +928,85 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
           <p>The first round will be fought using the {selectedChallenge?.firstRoundAbility} ability!</p>
         </div>
 
-        {/* Tools Section */}
-        <div className="tools-section">
-          <h3>Available Tools (Drag to apply)</h3>
-          <div className="tools-container">
-            {availableTools.map(pt => (
-              <div
-                key={pt.toolId}
-                className="tool-item"
-                draggable
-                onDragStart={() => handleToolDragStart(pt.toolId)}
-                onDragEnd={handleToolDragEnd}
-                style={{
-                  opacity: Array.from(appliedTools.values()).includes(pt.toolId) ? 0.5 : 1,
-                }}
-              >
-                {pt.tool?.imageUrl && (
-                  <img
-                    src={pt.tool.imageUrl}
-                    alt={pt.tool.name}
-                    className="tool-image"
-                  />
-                )}
-                <div className="tool-info">
-                  <div className="tool-name">{pt.tool?.name}</div>
-                  <div className="tool-effect">{getToolEffect(pt.toolId)}</div>
-                </div>
-              </div>
-            ))}
+        {/* Action Tools Section */}
+        {actionTools.length > 0 && (
+          <div className="tools-section action-tools">
+            <h3>Action Tools (Click to use)</h3>
+            <div className="tools-container">
+              {actionTools.map(pt => (
+                <button
+                  key={pt.toolId}
+                  className="tool-item tool-button"
+                  onClick={() => handleUseBinoculars()}
+                  disabled={binocularsUsed}
+                  style={{
+                    opacity: binocularsUsed ? 0.5 : 1,
+                    cursor: binocularsUsed ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {pt.tool?.imageUrl && (
+                    <img
+                      src={pt.tool.imageUrl}
+                      alt={pt.tool.name}
+                      className="tool-image"
+                    />
+                  )}
+                  <div className="tool-info">
+                    <div className="tool-name">{pt.tool?.name}</div>
+                    <div className="tool-effect">{pt.tool?.description}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Revealed Cards Section */}
+        {revealedCards.length > 0 && (
+          <div className="revealed-cards-section">
+            <h3>Revealed Opponent Cards:</h3>
+            <div className="revealed-cards">
+              {revealedCards.map(card => (
+                <div key={card.id} className="revealed-card">
+                  <CardComponent card={card} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Card Tools Section */}
+        {cardTools.length > 0 && (
+          <div className="tools-section card-tools">
+            <h3>Card Tools (Drag to apply)</h3>
+            <div className="tools-container">
+              {cardTools.map(pt => (
+                <div
+                  key={pt.toolId}
+                  className="tool-item"
+                  draggable
+                  onDragStart={() => handleToolDragStart(pt.toolId)}
+                  onDragEnd={handleToolDragEnd}
+                  style={{
+                    opacity: Array.from(appliedTools.values()).includes(pt.toolId) ? 0.5 : 1,
+                  }}
+                >
+                  {pt.tool?.imageUrl && (
+                    <img
+                      src={pt.tool.imageUrl}
+                      alt={pt.tool.name}
+                      className="tool-image"
+                    />
+                  )}
+                  <div className="tool-info">
+                    <div className="tool-name">{pt.tool?.name}</div>
+                    <div className="tool-effect">{getToolEffect(pt.toolId)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <h3 className="card-selection-info">Select the order to play your cards (click cards in order)</h3>
         <div className="battle-cards">
@@ -926,7 +1031,7 @@ const Challenge: React.FC<ChallengeProps> = ({ player, onUpdate }) => {
                   <div className="applied-tools">
                     <div className="tool-badge">
                       {(() => {
-                        const tool = availableTools.find(pt => pt.toolId === appliedTool)?.tool;
+                        const tool = allAvailableTools.find((pt: PlayerTool) => pt.toolId === appliedTool)?.tool;
                         if (tool?.imageUrl) {
                           return (
                             <img

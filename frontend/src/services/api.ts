@@ -252,6 +252,13 @@ export const challengeAPI = {
     });
     return response.data;
   },
+
+  useBinoculars: async (challengeId: string, playerId: string): Promise<{ challenge: Challenge; revealedCards: string[] }> => {
+    const response = await api.post(`/challenges/${challengeId}/use-binoculars`, {
+      playerId,
+    });
+    return response.data;
+  },
 };
 
 export const leaderboardAPI = {
