@@ -80,35 +80,32 @@ const Card: React.FC<CardProps> = ({ card, onClick, selected, count, hideCrit })
           <div className="card-stats">
             <div className="stat">
               <span className="stat-label">STR</span>
-              <span className="stat-value">
-                {card.abilities.strength}
-                {card.titleModifiers?.strength !== 0 && card.titleModifiers?.strength !== undefined && (
-                  <span className={`modifier ${card.titleModifiers.strength > 0 ? 'positive' : 'negative'}`}>
-                    {card.titleModifiers.strength > 0 ? '+' : ''}{card.titleModifiers.strength}
-                  </span>
-                )}
+              <span className={`stat-value ${
+                card.titleModifiers?.strength
+                  ? (card.titleModifiers.strength > 0 ? 'stat-increased' : 'stat-decreased')
+                  : ''
+              }`}>
+                {strengthTotal}
               </span>
             </div>
             <div className="stat">
               <span className="stat-label">SPD</span>
-              <span className="stat-value">
-                {card.abilities.speed}
-                {card.titleModifiers?.speed !== 0 && card.titleModifiers?.speed !== undefined && (
-                  <span className={`modifier ${card.titleModifiers.speed > 0 ? 'positive' : 'negative'}`}>
-                    {card.titleModifiers.speed > 0 ? '+' : ''}{card.titleModifiers.speed}
-                  </span>
-                )}
+              <span className={`stat-value ${
+                card.titleModifiers?.speed
+                  ? (card.titleModifiers.speed > 0 ? 'stat-increased' : 'stat-decreased')
+                  : ''
+              }`}>
+                {speedTotal}
               </span>
             </div>
             <div className="stat">
               <span className="stat-label">AGL</span>
-              <span className="stat-value">
-                {card.abilities.agility}
-                {card.titleModifiers?.agility !== 0 && card.titleModifiers?.agility !== undefined && (
-                  <span className={`modifier ${card.titleModifiers.agility > 0 ? 'positive' : 'negative'}`}>
-                    {card.titleModifiers.agility > 0 ? '+' : ''}{card.titleModifiers.agility}
-                  </span>
-                )}
+              <span className={`stat-value ${
+                card.titleModifiers?.agility
+                  ? (card.titleModifiers.agility > 0 ? 'stat-increased' : 'stat-decreased')
+                  : ''
+              }`}>
+                {agilityTotal}
               </span>
             </div>
           </div>

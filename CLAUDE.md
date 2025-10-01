@@ -27,3 +27,4 @@ The SQLite database file is located at `/backend/game.db`. This is the ONLY data
 ## Architecture
 
 Architecture details will be documented as the project structure is established.
+- never commit before I have properly tested!

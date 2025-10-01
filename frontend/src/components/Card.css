@@ -222,28 +222,21 @@
   font-size: 22px;
   font-weight: bold;
   position: relative;
-  color: #8b0000;
+  color: #000000;
   font-family: 'Cinzel', serif;
   text-shadow:
     1px 1px 0 rgba(255, 215, 0, 0.5),
     -1px -1px 0 rgba(0, 0, 0, 0.3);
 }
 
-.stat-value .modifier {
-  font-size: 12px;
-  margin-left: 2px;
-  vertical-align: super;
-  font-weight: bold;
+.stat-value.stat-increased {
+  color: #229954;
+  text-shadow: 0 0 4px rgba(34, 153, 84, 0.5);
 }
 
-.stat-value .modifier.positive {
-  color: #27ae60;
-  text-shadow: 0 0 3px rgba(39, 174, 96, 0.5);
-}
-
-.stat-value .modifier.negative {
-  color: #e74c3c;
-  text-shadow: 0 0 3px rgba(231, 76, 60, 0.5);
+.stat-value.stat-decreased {
+  color: #a93226;
+  text-shadow: 0 0 4px rgba(169, 50, 38, 0.5);
 }
 
 /* Critical hit badge - Lightning bolt style */

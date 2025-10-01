@@ -1098,11 +1098,18 @@
 }
 
 .challenge-container .stat-value {
-  color: #2c1810;
   font-family: 'Cinzel', serif;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.challenge-container .stat-value.stat-increased {
+  color: #229954;
+}
+
+.challenge-container .stat-value.stat-decreased {
+  color: #a93226;
 }
 
 .dice-roll {
